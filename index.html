@@ -1,235 +1,776 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <title>OPS Dashboard</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
 
   <style>
+    :root {
+      --bg: #080c14;
+      --surface: #0d1320;
+      --surface2: #121929;
+      --border: rgba(255,255,255,0.06);
+      --accent: #f97316;
+      --accent2: #fb923c;
+      --accent-glow: rgba(249,115,22,0.18);
+      --text: #e2e8f0;
+      --muted: #64748b;
+      --success: #34d399;
+      --danger: #f87171;
+      --info: #60a5fa;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
     body {
-      margin: 0;
-      font-family: Inter;
+      font-family: 'DM Mono', monospace;
+      background: var(--bg);
+      color: var(--text);
       display: flex;
-      background: #0f172a;
-      color: white;
-    }
-
-    /* Sidebar */
-    .sidebar {
-      width: 220px;
-      background: #1e293b;
       height: 100vh;
-      padding: 20px;
+      overflow: hidden;
+      position: relative;
     }
 
-    .sidebar h2 {
-      color: #f97316;
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: 
+        radial-gradient(ellipse 60% 40% at 80% 20%, rgba(249,115,22,0.06) 0%, transparent 60%),
+        radial-gradient(ellipse 40% 60% at 10% 80%, rgba(96,165,250,0.04) 0%, transparent 50%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ── SIDEBAR ── */
+    .sidebar {
+      width: 230px;
+      min-width: 230px;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      padding: 28px 16px;
+      position: relative;
+      z-index: 10;
+    }
+
+    .logo-wrap {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 0 8px 28px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 24px;
+    }
+
+    .logo-icon {
+      width: 32px;
+      height: 32px;
+      background: var(--accent);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Syne', sans-serif;
+      font-weight: 800;
+      font-size: 14px;
+      color: white;
+      flex-shrink: 0;
+    }
+
+    .logo-text {
+      font-family: 'Syne', sans-serif;
+      font-weight: 700;
+      font-size: 15px;
+      letter-spacing: 0.08em;
+      color: var(--text);
+    }
+
+    .logo-text span {
+      color: var(--accent);
+    }
+
+    .menu-label {
+      font-size: 9px;
+      letter-spacing: 0.2em;
+      color: var(--muted);
+      text-transform: uppercase;
+      padding: 0 10px;
+      margin-bottom: 8px;
     }
 
     .menu {
-      margin-top: 30px;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
     }
 
-    .menu div {
-      padding: 10px;
-      cursor: pointer;
+    .menu-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 12px;
       border-radius: 8px;
-      margin-bottom: 5px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 400;
+      color: var(--muted);
+      letter-spacing: 0.03em;
+      transition: all 0.18s ease;
+      position: relative;
     }
 
-    .menu div:hover {
-      background: #334155;
+    .menu-item:hover {
+      background: rgba(255,255,255,0.04);
+      color: var(--text);
     }
 
-    .active {
-      background: #f97316;
+    .menu-item.active {
+      background: var(--accent-glow);
+      color: var(--accent);
+      font-weight: 500;
     }
 
-    /* Main */
+    .menu-item.active::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 3px;
+      height: 60%;
+      background: var(--accent);
+      border-radius: 0 2px 2px 0;
+    }
+
+    .menu-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: currentColor;
+      opacity: 0.5;
+      flex-shrink: 0;
+    }
+
+    .menu-item.active .menu-dot { opacity: 1; }
+
+    .sidebar-footer {
+      margin-top: auto;
+      padding-top: 20px;
+      border-top: 1px solid var(--border);
+      font-size: 10px;
+      color: var(--muted);
+      text-align: center;
+      letter-spacing: 0.05em;
+    }
+
+    /* ── MAIN ── */
     .main {
       flex: 1;
-      padding: 20px;
+      overflow-y: auto;
+      padding: 28px 30px;
+      position: relative;
+      z-index: 1;
     }
 
+    .main::-webkit-scrollbar { width: 4px; }
+    .main::-webkit-scrollbar-track { background: transparent; }
+    .main::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+    /* ── HEADER ── */
+    .header {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      margin-bottom: 28px;
+    }
+
+    .header-left h1 {
+      font-family: 'Syne', sans-serif;
+      font-weight: 800;
+      font-size: 26px;
+      letter-spacing: -0.02em;
+      color: var(--text);
+      line-height: 1;
+    }
+
+    .header-left .subtitle {
+      margin-top: 5px;
+      font-size: 11px;
+      color: var(--muted);
+      letter-spacing: 0.05em;
+    }
+
+    .live-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 10px;
+      background: rgba(52,211,153,0.1);
+      border: 1px solid rgba(52,211,153,0.2);
+      border-radius: 20px;
+      font-size: 10px;
+      color: var(--success);
+      letter-spacing: 0.08em;
+    }
+
+    .live-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--success);
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+
+    /* ── FILTERS ── */
     .filters {
       display: flex;
+      align-items: center;
       gap: 10px;
-      margin-bottom: 20px;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
     }
 
-    input {
-      padding: 8px;
-      border-radius: 6px;
+    .filter-label {
+      font-size: 10px;
+      color: var(--muted);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
     }
 
-    button {
-      background: #f97316;
+    .filter-group {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0 10px;
+      height: 36px;
+    }
+
+    .filter-group input[type="date"] {
+      background: transparent;
       border: none;
-      padding: 10px;
+      color: var(--text);
+      font-family: 'DM Mono', monospace;
+      font-size: 11px;
+      outline: none;
+      padding: 0;
+      height: 100%;
+      color-scheme: dark;
+    }
+
+    .filter-sep {
+      color: var(--muted);
+      font-size: 10px;
+    }
+
+    .btn {
+      height: 36px;
+      padding: 0 16px;
+      background: var(--accent);
+      border: none;
       border-radius: 8px;
       color: white;
       cursor: pointer;
+      font-family: 'DM Mono', monospace;
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.06em;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.18s ease;
     }
 
+    .btn:hover {
+      background: var(--accent2);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 16px var(--accent-glow);
+    }
+
+    .btn:active { transform: translateY(0); }
+
+    /* ── KPI CARDS ── */
     .grid {
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 10px;
-      margin-bottom: 20px;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 12px;
+      margin-bottom: 24px;
     }
 
     .card {
-      background: #1e293b;
-      padding: 15px;
-      border-radius: 10px;
-      text-align: center;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 18px 16px;
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.18s, box-shadow 0.18s;
+      animation: fadeUp 0.4s ease both;
+    }
+
+    .card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+    }
+
+    .card::after {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: var(--accent);
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+
+    .card:hover::after { opacity: 1; }
+
+    .card-label {
+      font-size: 10px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 10px;
+    }
+
+    .card-value {
+      font-family: 'Syne', sans-serif;
+      font-weight: 700;
+      font-size: 24px;
+      color: var(--text);
+      line-height: 1;
+    }
+
+    .card-change {
+      margin-top: 8px;
+      font-size: 10px;
+      color: var(--success);
+    }
+
+    .card-bg {
+      position: absolute;
+      right: -10px;
+      bottom: -10px;
+      font-size: 52px;
+      opacity: 0.04;
+      line-height: 1;
+      pointer-events: none;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(12px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── CHARTS ROW ── */
+    .charts-row {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .chart-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      animation: fadeUp 0.5s ease 0.1s both;
+    }
+
+    .chart-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+
+    .chart-title {
+      font-family: 'Syne', sans-serif;
+      font-weight: 600;
+      font-size: 13px;
+      letter-spacing: 0.02em;
+    }
+
+    .chart-tag {
+      font-size: 9px;
+      padding: 3px 8px;
+      border-radius: 20px;
+      background: var(--accent-glow);
+      color: var(--accent);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
     }
 
     canvas {
-      background: #1e293b;
-      padding: 15px;
-      border-radius: 10px;
-      margin-bottom: 20px;
+      border-radius: 4px;
+      max-height: 200px;
     }
+
+    /* ── TABLE ── */
+    .table-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      animation: fadeUp 0.5s ease 0.15s both;
+    }
+
+    .table-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .table-title {
+      font-family: 'Syne', sans-serif;
+      font-weight: 600;
+      font-size: 13px;
+    }
+
+    .table-count {
+      font-size: 10px;
+      color: var(--muted);
+      background: var(--surface2);
+      padding: 3px 8px;
+      border-radius: 20px;
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+      max-height: 280px;
+      overflow-y: auto;
+    }
+
+    .table-wrap::-webkit-scrollbar { width: 3px; height: 3px; }
+    .table-wrap::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
 
     table {
       width: 100%;
-      background: #1e293b;
-      border-radius: 10px;
-      overflow: hidden;
+      border-collapse: collapse;
+      font-size: 11px;
     }
 
-    th, td {
-      padding: 10px;
-      border-bottom: 1px solid #334155;
+    thead {
+      position: sticky;
+      top: 0;
+      background: var(--surface2);
+      z-index: 2;
     }
 
+    th {
+      padding: 10px 16px;
+      text-align: left;
+      font-size: 9px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--muted);
+      font-weight: 500;
+      white-space: nowrap;
+      border-bottom: 1px solid var(--border);
+    }
+
+    td {
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--border);
+      color: var(--text);
+      white-space: nowrap;
+    }
+
+    tbody tr:last-child td { border-bottom: none; }
+
+    tbody tr:hover td {
+      background: rgba(255,255,255,0.02);
+    }
+
+    /* Loading / Empty States */
+    .state-msg {
+      text-align: center;
+      padding: 40px;
+      color: var(--muted);
+      font-size: 11px;
+      letter-spacing: 0.05em;
+    }
+
+    .spinner {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 2px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      margin-bottom: 10px;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .loading-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(8,12,20,0.8);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      gap: 12px;
+      backdrop-filter: blur(4px);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s;
+    }
+
+    .loading-overlay.show {
+      opacity: 1;
+      pointer-events: all;
+    }
+
+    .loading-text {
+      font-size: 11px;
+      color: var(--muted);
+      letter-spacing: 0.1em;
+    }
   </style>
 </head>
 
 <body>
 
+<!-- Loading -->
+<div class="loading-overlay" id="loader">
+  <div class="spinner"></div>
+  <div class="loading-text">FETCHING DATA...</div>
+</div>
+
 <!-- Sidebar -->
 <div class="sidebar">
-  <h2>OPS Dashboard</h2>
+  <div class="logo-wrap">
+    <div class="logo-icon">OP</div>
+    <div class="logo-text">OPS<span>.</span></div>
+  </div>
 
-  <div class="menu">
-    <div onclick="loadPage('main')" class="active">Main Dashboard</div>
-    <div onclick="loadPage('Daily Dashboard')">Sales</div>
-    <div onclick="loadPage('Marketing Metrics')">Marketing</div>
-    <div onclick="loadPage('Product Metrics')">Product</div>
-    <div onclick="loadPage('Finance')">Finance</div>
-    <div onclick="loadPage('Supply Chain')">Supply Chain</div>
-    <div onclick="loadPage('HR')">HR</div>
+  <div class="menu-label">Navigation</div>
+  <div class="menu" id="menu">
+    <div class="menu-item active" onclick="loadPage('main')" data-page="main">
+      <span class="menu-dot"></span> Overview
+    </div>
+    <div class="menu-item" onclick="loadPage('Daily Dashboard')" data-page="Daily Dashboard">
+      <span class="menu-dot"></span> Sales
+    </div>
+    <div class="menu-item" onclick="loadPage('Marketing Metrics')" data-page="Marketing Metrics">
+      <span class="menu-dot"></span> Marketing
+    </div>
+    <div class="menu-item" onclick="loadPage('Product Metrics')" data-page="Product Metrics">
+      <span class="menu-dot"></span> Product
+    </div>
+    <div class="menu-item" onclick="loadPage('Finance')" data-page="Finance">
+      <span class="menu-dot"></span> Finance
+    </div>
+    <div class="menu-item" onclick="loadPage('Supply Chain')" data-page="Supply Chain">
+      <span class="menu-dot"></span> Supply Chain
+    </div>
+    <div class="menu-item" onclick="loadPage('HR')" data-page="HR">
+      <span class="menu-dot"></span> HR
+    </div>
+  </div>
+
+  <div class="sidebar-footer">
+    v2.0 · OPS Platform
   </div>
 </div>
 
-<!-- Main Content -->
+<!-- Main -->
 <div class="main">
 
-  <h2 id="title">Main Dashboard</h2>
-
-  <div class="filters">
-    <input type="date" id="start">
-    <input type="date" id="end">
-    <button onclick="applyFilter()">Apply</button>
+  <div class="header">
+    <div class="header-left">
+      <h1 id="title">Overview</h1>
+      <div class="subtitle" id="subtitle">All departments · Consolidated view</div>
+    </div>
+    <div class="live-badge">
+      <div class="live-dot"></div> LIVE
+    </div>
   </div>
 
-  <div class="grid" id="kpis"></div>
+  <div class="filters">
+    <span class="filter-label">Period</span>
+    <div class="filter-group">
+      <input type="date" id="start" />
+      <span class="filter-sep">→</span>
+      <input type="date" id="end" />
+    </div>
+    <button class="btn" onclick="applyFilter()">↻ Refresh</button>
+  </div>
 
-  <canvas id="chart"></canvas>
+  <div class="grid" id="kpis">
+    <div class="state-msg"><div class="spinner"></div></div>
+  </div>
 
-  <table id="table">
-    <thead></thead>
-    <tbody></tbody>
-  </table>
+  <div class="charts-row">
+    <div class="chart-card">
+      <div class="chart-header">
+        <div class="chart-title">Trend</div>
+        <div class="chart-tag" id="chart-metric">—</div>
+      </div>
+      <canvas id="chart"></canvas>
+    </div>
+    <div class="chart-card">
+      <div class="chart-header">
+        <div class="chart-title">Distribution</div>
+        <div class="chart-tag">Summary</div>
+      </div>
+      <canvas id="chart2"></canvas>
+    </div>
+  </div>
+
+  <div class="table-card">
+    <div class="table-header">
+      <div class="table-title">Raw Data</div>
+      <div class="table-count" id="row-count">— rows</div>
+    </div>
+    <div class="table-wrap">
+      <table id="table">
+        <thead></thead>
+        <tbody><tr><td colspan="99"><div class="state-msg">Loading...</div></td></tr></tbody>
+      </table>
+    </div>
+  </div>
 
 </div>
 
 <script>
-
 const API = "https://script.google.com/macros/s/AKfycbxqM_jClfPETd7I7eDXXiCGQvs3RRzgBpQNUjh8mrh_wymG6DNabMOnQarSZxpODiVn/exec";
 let currentSheet = "main";
-let chart;
+let chart, chart2;
 
+Chart.defaults.color = '#64748b';
+Chart.defaults.borderColor = 'rgba(255,255,255,0.04)';
+Chart.defaults.font.family = "'DM Mono', monospace";
+Chart.defaults.font.size = 10;
 
-// Load Page
-function loadPage(sheet) {
-  currentSheet = sheet;
-  document.getElementById("title").innerText = sheet;
-
-  if (sheet === "main") {
-    loadMainDashboard();
-  } else {
-    loadDepartment(sheet);
-  }
+function setLoading(on) {
+  document.getElementById('loader').classList.toggle('show', on);
 }
 
-
-// Main Dashboard (ALL DATA)
-async function loadMainDashboard() {
-  const sheets = ["Daily Dashboard","Marketing Metrics","Finance"];
-
-  let combined = [];
-
-  for (let s of sheets) {
-    const res = await fetch(`${API}?action=getData&sheet=${s}`);
-    const data = await res.json();
-    combined = combined.concat(data);
-  }
-
-  renderAll(combined);
-}
-
-
-// Department Data
-async function loadDepartment(sheet) {
-  const res = await fetch(`${API}?action=getData&sheet=${sheet}`);
-  const data = await res.json();
-
-  renderAll(data);
-}
-
-
-// Filter
-function applyFilter() {
-  loadPage(currentSheet);
-}
-
-
-// KPI
-function renderKPIs(data) {
-  const container = document.getElementById("kpis");
-  container.innerHTML = "";
-
-  const keys = Object.keys(data[0]);
-
-  keys.forEach(k => {
-    const nums = data.map(d => parseFloat(d[k])).filter(v => !isNaN(v));
-
-    if (nums.length) {
-      const sum = nums.reduce((a,b)=>a+b,0);
-
-      container.innerHTML += `
-        <div class="card">
-          <h4>${k}</h4>
-          <h2>${sum}</h2>
-        </div>
-      `;
-    }
+function setActive(page) {
+  document.querySelectorAll('.menu-item').forEach(el => {
+    el.classList.toggle('active', el.dataset.page === page);
   });
 }
 
+async function loadPage(sheet) {
+  currentSheet = sheet;
+  setActive(sheet);
 
-// Chart
+  const labels = {
+    'main': ['Overview', 'All departments · Consolidated view'],
+    'Daily Dashboard': ['Sales', 'Daily performance metrics'],
+    'Marketing Metrics': ['Marketing', 'Campaign & acquisition data'],
+    'Product Metrics': ['Product', 'Feature & engagement metrics'],
+    'Finance': ['Finance', 'Revenue, costs & margins'],
+    'Supply Chain': ['Supply Chain', 'Inventory & logistics data'],
+    'HR': ['HR', 'Headcount & people metrics'],
+  };
+  const [title, sub] = labels[sheet] || [sheet, ''];
+  document.getElementById('title').textContent = title;
+  document.getElementById('subtitle').textContent = sub;
+
+  if (sheet === 'main') {
+    await loadMainDashboard();
+  } else {
+    await loadDepartment(sheet);
+  }
+}
+
+async function loadMainDashboard() {
+  setLoading(true);
+  const sheets = ["Daily Dashboard","Marketing Metrics","Finance"];
+  let combined = [];
+  for (let s of sheets) {
+    try {
+      const res = await fetch(`${API}?action=getData&sheet=${s}`);
+      const data = await res.json();
+      combined = combined.concat(data);
+    } catch(e) {}
+  }
+  setLoading(false);
+  renderAll(combined);
+}
+
+async function loadDepartment(sheet) {
+  setLoading(true);
+  try {
+    const res = await fetch(`${API}?action=getData&sheet=${sheet}`);
+    const data = await res.json();
+    setLoading(false);
+    renderAll(data);
+  } catch(e) {
+    setLoading(false);
+    showError();
+  }
+}
+
+function applyFilter() { loadPage(currentSheet); }
+
+function showError() {
+  document.getElementById('kpis').innerHTML = `<div class="state-msg">⚠ Could not load data</div>`;
+}
+
+function renderKPIs(data) {
+  const container = document.getElementById("kpis");
+  container.innerHTML = "";
+  const keys = Object.keys(data[0]);
+  const emojis = ['◈', '◉', '◇', '◆', '▲', '●', '■', '▶'];
+  let idx = 0;
+  keys.forEach(k => {
+    const nums = data.map(d => parseFloat(d[k])).filter(v => !isNaN(v));
+    if (nums.length) {
+      const sum = nums.reduce((a,b)=>a+b,0);
+      const fmt = sum > 1e6 ? (sum/1e6).toFixed(1)+'M'
+                : sum > 1e3 ? (sum/1e3).toFixed(1)+'K'
+                : sum.toLocaleString();
+      const delay = idx * 0.05;
+      container.innerHTML += `
+        <div class="card" style="animation-delay:${delay}s">
+          <div class="card-label">${k}</div>
+          <div class="card-value">${fmt}</div>
+          <div class="card-change">↑ active</div>
+          <div class="card-bg">${emojis[idx % emojis.length]}</div>
+        </div>`;
+      idx++;
+    }
+  });
+  if (!idx) container.innerHTML = `<div class="state-msg">No numeric data found</div>`;
+}
+
 function renderChart(data) {
-  const ctx = document.getElementById("chart");
-
+  const ctx = document.getElementById("chart").getContext('2d');
   const key = Object.keys(data[0]).find(k => !isNaN(parseFloat(data[0][k])));
+  if (!key) return;
 
-  const labels = data.map(d => d["Date"]);
+  document.getElementById('chart-metric').textContent = key;
+
+  const labels = data.map(d => d["Date"] || '—');
   const values = data.map(d => parseFloat(d[key]) || 0);
 
   if (chart) chart.destroy();
+
+  const gradient = ctx.createLinearGradient(0, 0, 0, 200);
+  gradient.addColorStop(0, 'rgba(249,115,22,0.3)');
+  gradient.addColorStop(1, 'rgba(249,115,22,0)');
 
   chart = new Chart(ctx, {
     type: 'line',
@@ -237,45 +778,129 @@ function renderChart(data) {
       labels,
       datasets: [{
         label: key,
-        data: values
+        data: values,
+        borderColor: '#f97316',
+        backgroundColor: gradient,
+        borderWidth: 2,
+        pointRadius: data.length > 30 ? 0 : 3,
+        pointBackgroundColor: '#f97316',
+        pointBorderColor: '#080c14',
+        pointBorderWidth: 2,
+        tension: 0.4,
+        fill: true,
       }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#0d1320',
+          borderColor: 'rgba(255,255,255,0.08)',
+          borderWidth: 1,
+          titleColor: '#f97316',
+          bodyColor: '#e2e8f0',
+          padding: 10,
+        }
+      },
+      scales: {
+        x: {
+          ticks: { maxTicksLimit: 8, color: '#64748b', font: { size: 9 } },
+          grid: { color: 'rgba(255,255,255,0.03)' },
+        },
+        y: {
+          ticks: { color: '#64748b', font: { size: 9 } },
+          grid: { color: 'rgba(255,255,255,0.03)' },
+        }
+      }
     }
   });
 }
 
+function renderChart2(data) {
+  const ctx2 = document.getElementById("chart2").getContext('2d');
+  const numKeys = Object.keys(data[0]).filter(k => !isNaN(parseFloat(data[0][k])));
+  const topKeys = numKeys.slice(0, 5);
+  const sums = topKeys.map(k => data.reduce((s, d) => s + (parseFloat(d[k]) || 0), 0));
 
-// Table
-function renderTable(data) {
-  const thead = document.querySelector("#table thead");
-  const tbody = document.querySelector("#table tbody");
+  if (chart2) chart2.destroy();
 
-  thead.innerHTML = "";
-  tbody.innerHTML = "";
+  const colors = ['#f97316','#fb923c','#60a5fa','#34d399','#a78bfa'];
 
-  const headers = Object.keys(data[0]);
-
-  thead.innerHTML = "<tr>" + headers.map(h => `<th>${h}</th>`).join("") + "</tr>";
-
-  data.forEach(row => {
-    tbody.innerHTML += "<tr>" + headers.map(h => `<td>${row[h]}</td>`).join("") + "</tr>";
+  chart2 = new Chart(ctx2, {
+    type: 'doughnut',
+    data: {
+      labels: topKeys,
+      datasets: [{
+        data: sums,
+        backgroundColor: colors.map(c => c + '99'),
+        borderColor: colors,
+        borderWidth: 2,
+        hoverOffset: 4,
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: {
+          position: 'bottom',
+          labels: { color: '#64748b', font: { size: 9 }, padding: 8, boxWidth: 10 }
+        },
+        tooltip: {
+          backgroundColor: '#0d1320',
+          borderColor: 'rgba(255,255,255,0.08)',
+          borderWidth: 1,
+          titleColor: '#f97316',
+          bodyColor: '#e2e8f0',
+          padding: 10,
+        }
+      },
+      cutout: '65%',
+    }
   });
 }
 
+function renderTable(data) {
+  const thead = document.querySelector("#table thead");
+  const tbody = document.querySelector("#table tbody");
+  thead.innerHTML = "";
+  tbody.innerHTML = "";
 
-// Render all
+  document.getElementById('row-count').textContent = `${data.length} rows`;
+
+  const headers = Object.keys(data[0]);
+  thead.innerHTML = "<tr>" + headers.map(h => `<th>${h}</th>`).join("") + "</tr>";
+
+  const CHUNK = 50;
+  const slice = data.slice(0, CHUNK);
+
+  slice.forEach(row => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = headers.map(h => `<td>${row[h] ?? '—'}</td>`).join('');
+    tbody.appendChild(tr);
+  });
+
+  if (data.length > CHUNK) {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td colspan="${headers.length}" style="text-align:center;color:var(--muted);font-size:10px;padding:12px">
+      Showing ${CHUNK} of ${data.length} rows</td>`;
+    tbody.appendChild(tr);
+  }
+}
+
 function renderAll(data) {
-  if (!data.length) return;
-
+  if (!data || !data.length) {
+    document.getElementById('kpis').innerHTML = `<div class="state-msg">No data available</div>`;
+    return;
+  }
   renderKPIs(data);
   renderChart(data);
+  renderChart2(data);
   renderTable(data);
 }
 
-
-// Init
 loadMainDashboard();
-
 </script>
-
 </body>
 </html>
