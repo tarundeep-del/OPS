@@ -1,1038 +1,358 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
   <title>OPS Dashboard</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
 
   <style>
-    :root {
-      --bg: #080c14;
-      --surface: #0d1320;
-      --surface2: #121929;
-      --border: rgba(255,255,255,0.06);
-      --accent: #f97316;
-      --accent2: #fb923c;
-      --accent-glow: rgba(249,115,22,0.18);
-      --text: #e2e8f0;
-      --muted: #64748b;
-      --success: #34d399;
-      --danger: #f87171;
-      --info: #60a5fa;
-    }
-
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-
     body {
-      font-family: 'DM Mono', monospace;
-      background: var(--bg);
-      color: var(--text);
+      margin: 0;
+      font-family: Arial;
       display: flex;
-      height: 100vh;
-      overflow: hidden;
-      position: relative;
-    }
-
-    body::before {
-      content: '';
-      position: fixed;
-      inset: 0;
-      background: 
-        radial-gradient(ellipse 60% 40% at 80% 20%, rgba(249,115,22,0.06) 0%, transparent 60%),
-        radial-gradient(ellipse 40% 60% at 10% 80%, rgba(96,165,250,0.04) 0%, transparent 50%);
-      pointer-events: none;
-      z-index: 0;
-    }
-
-    /* ── SIDEBAR ── */
-    .sidebar {
-      width: 230px;
-      min-width: 230px;
-      background: var(--surface);
-      border-right: 1px solid var(--border);
-      display: flex;
-      flex-direction: column;
-      padding: 28px 16px;
-      position: relative;
-      z-index: 10;
-    }
-
-    .logo-wrap {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 0 8px 28px;
-      border-bottom: 1px solid var(--border);
-      margin-bottom: 24px;
-    }
-
-    .logo-icon {
-      width: 32px;
-      height: 32px;
-      background: var(--accent);
-      border-radius: 8px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-family: 'Syne', sans-serif;
-      font-weight: 800;
-      font-size: 14px;
+      background: #0f172a;
       color: white;
-      flex-shrink: 0;
     }
 
-    .logo-text {
-      font-family: 'Syne', sans-serif;
-      font-weight: 700;
-      font-size: 15px;
-      letter-spacing: 0.08em;
-      color: var(--text);
+    .sidebar {
+      width: 220px;
+      background: #1e293b;
+      height: 100vh;
+      padding: 20px;
     }
 
-    .logo-text span {
-      color: var(--accent);
+    .sidebar h2 {
+      color: #f97316;
     }
 
-    .menu-label {
-      font-size: 9px;
-      letter-spacing: 0.2em;
-      color: var(--muted);
-      text-transform: uppercase;
-      padding: 0 10px;
-      margin-bottom: 8px;
-    }
-
-    .menu {
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-    }
-
-    .menu-item {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 9px 12px;
-      border-radius: 8px;
+    .menu div {
+      padding: 10px;
       cursor: pointer;
-      font-size: 12px;
-      font-weight: 400;
-      color: var(--muted);
-      letter-spacing: 0.03em;
-      transition: all 0.18s ease;
-      position: relative;
+      border-radius: 8px;
+      margin-bottom: 5px;
     }
 
-    .menu-item:hover {
-      background: rgba(255,255,255,0.04);
-      color: var(--text);
+    .menu div:hover {
+      background: #334155;
     }
 
-    .menu-item.active {
-      background: var(--accent-glow);
-      color: var(--accent);
-      font-weight: 500;
+    .active {
+      background: #f97316;
     }
 
-    .menu-item.active::before {
-      content: '';
-      position: absolute;
-      left: 0;
-      top: 50%;
-      transform: translateY(-50%);
-      width: 3px;
-      height: 60%;
-      background: var(--accent);
-      border-radius: 0 2px 2px 0;
-    }
-
-    .menu-dot {
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      background: currentColor;
-      opacity: 0.5;
-      flex-shrink: 0;
-    }
-
-    .menu-item.active .menu-dot { opacity: 1; }
-
-    .sidebar-footer {
-      margin-top: auto;
-      padding-top: 20px;
-      border-top: 1px solid var(--border);
-      font-size: 10px;
-      color: var(--muted);
-      text-align: center;
-      letter-spacing: 0.05em;
-    }
-
-    /* ── MAIN ── */
     .main {
       flex: 1;
-      overflow-y: auto;
-      padding: 28px 30px;
-      position: relative;
-      z-index: 1;
+      padding: 20px;
     }
 
-    .main::-webkit-scrollbar { width: 4px; }
-    .main::-webkit-scrollbar-track { background: transparent; }
-    .main::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
-
-    /* ── HEADER ── */
-    .header {
-      display: flex;
-      align-items: flex-end;
-      justify-content: space-between;
-      margin-bottom: 28px;
-    }
-
-    .header-left h1 {
-      font-family: 'Syne', sans-serif;
-      font-weight: 800;
-      font-size: 26px;
-      letter-spacing: -0.02em;
-      color: var(--text);
-      line-height: 1;
-    }
-
-    .header-left .subtitle {
-      margin-top: 5px;
-      font-size: 11px;
-      color: var(--muted);
-      letter-spacing: 0.05em;
-    }
-
-    .live-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 5px 10px;
-      background: rgba(52,211,153,0.1);
-      border: 1px solid rgba(52,211,153,0.2);
-      border-radius: 20px;
-      font-size: 10px;
-      color: var(--success);
-      letter-spacing: 0.08em;
-    }
-
-    .live-dot {
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      background: var(--success);
-      animation: pulse 2s infinite;
-    }
-
-    @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.3; }
-    }
-
-    /* ── FILTERS ── */
     .filters {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin-bottom: 24px;
-      flex-wrap: wrap;
+      margin-bottom: 20px;
     }
 
-    .filter-label {
-      font-size: 10px;
-      color: var(--muted);
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
+    input {
+      padding: 8px;
+      border-radius: 6px;
     }
 
-    .filter-group {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 0 10px;
-      height: 36px;
-    }
-
-    .filter-group input[type="date"] {
-      background: transparent;
+    button {
+      background: #f97316;
       border: none;
-      color: var(--text);
-      font-family: 'DM Mono', monospace;
-      font-size: 11px;
-      outline: none;
-      padding: 0;
-      height: 100%;
-      color-scheme: dark;
-    }
-
-    .filter-sep {
-      color: var(--muted);
-      font-size: 10px;
-    }
-
-    .btn {
-      height: 36px;
-      padding: 0 16px;
-      background: var(--accent);
-      border: none;
-      border-radius: 8px;
+      padding: 8px 12px;
+      border-radius: 6px;
       color: white;
       cursor: pointer;
-      font-family: 'DM Mono', monospace;
-      font-size: 11px;
-      font-weight: 500;
-      letter-spacing: 0.06em;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      transition: all 0.18s ease;
     }
 
-    .btn:hover {
-      background: var(--accent2);
-      transform: translateY(-1px);
-      box-shadow: 0 4px 16px var(--accent-glow);
-    }
-
-    .btn:active { transform: translateY(0); }
-
-    /* ── KPI CARDS ── */
     .grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-      gap: 12px;
-      margin-bottom: 24px;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      margin-bottom: 20px;
     }
 
     .card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 18px 16px;
-      position: relative;
-      overflow: hidden;
-      transition: transform 0.18s, box-shadow 0.18s;
-      animation: fadeUp 0.4s ease both;
-    }
-
-    .card:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 8px 24px rgba(0,0,0,0.3);
-    }
-
-    .card::after {
-      content: '';
-      position: absolute;
-      top: 0; left: 0; right: 0;
-      height: 2px;
-      background: var(--accent);
-      opacity: 0;
-      transition: opacity 0.2s;
-    }
-
-    .card:hover::after { opacity: 1; }
-
-    .card-label {
-      font-size: 10px;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      color: var(--muted);
-      margin-bottom: 10px;
-    }
-
-    .card-value {
-      font-family: 'Syne', sans-serif;
-      font-weight: 700;
-      font-size: 24px;
-      color: var(--text);
-      line-height: 1;
-    }
-
-    .card-change {
-      margin-top: 8px;
-      font-size: 10px;
-      color: var(--success);
-    }
-
-    .card-bg {
-      position: absolute;
-      right: -10px;
-      bottom: -10px;
-      font-size: 52px;
-      opacity: 0.04;
-      line-height: 1;
-      pointer-events: none;
-    }
-
-    @keyframes fadeUp {
-      from { opacity: 0; transform: translateY(12px); }
-      to   { opacity: 1; transform: translateY(0); }
-    }
-
-    /* ── CHARTS ROW ── */
-    .charts-row {
-      display: grid;
-      grid-template-columns: 2fr 1fr;
-      gap: 16px;
-      margin-bottom: 24px;
-    }
-
-    .chart-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 20px;
-      animation: fadeUp 0.5s ease 0.1s both;
-    }
-
-    .chart-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 16px;
-    }
-
-    .chart-title {
-      font-family: 'Syne', sans-serif;
-      font-weight: 600;
-      font-size: 13px;
-      letter-spacing: 0.02em;
-    }
-
-    .chart-tag {
-      font-size: 9px;
-      padding: 3px 8px;
-      border-radius: 20px;
-      background: var(--accent-glow);
-      color: var(--accent);
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
+      background: #1e293b;
+      padding: 15px;
+      border-radius: 10px;
+      text-align: center;
     }
 
     canvas {
-      border-radius: 4px;
-      max-height: 200px;
+      background: #1e293b;
+      padding: 10px;
+      border-radius: 10px;
+      margin-bottom: 20px;
     }
-
-    /* ── TABLE ── */
-    .table-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      overflow: hidden;
-      animation: fadeUp 0.5s ease 0.15s both;
-    }
-
-    .table-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 16px 20px;
-      border-bottom: 1px solid var(--border);
-    }
-
-    .table-title {
-      font-family: 'Syne', sans-serif;
-      font-weight: 600;
-      font-size: 13px;
-    }
-
-    .table-count {
-      font-size: 10px;
-      color: var(--muted);
-      background: var(--surface2);
-      padding: 3px 8px;
-      border-radius: 20px;
-    }
-
-    .table-wrap {
-      overflow-x: auto;
-      max-height: 280px;
-      overflow-y: auto;
-    }
-
-    .table-wrap::-webkit-scrollbar { width: 3px; height: 3px; }
-    .table-wrap::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
 
     table {
       width: 100%;
-      border-collapse: collapse;
-      font-size: 11px;
+      background: #1e293b;
+      border-radius: 10px;
+      overflow: hidden;
     }
 
-    thead {
-      position: sticky;
-      top: 0;
-      background: var(--surface2);
-      z-index: 2;
-    }
-
-    th {
-      padding: 10px 16px;
-      text-align: left;
-      font-size: 9px;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      color: var(--muted);
-      font-weight: 500;
-      white-space: nowrap;
-      border-bottom: 1px solid var(--border);
-    }
-
-    td {
-      padding: 10px 16px;
-      border-bottom: 1px solid var(--border);
-      color: var(--text);
-      white-space: nowrap;
-    }
-
-    tbody tr:last-child td { border-bottom: none; }
-
-    tbody tr:hover td {
-      background: rgba(255,255,255,0.02);
-    }
-
-    /* Loading / Empty States */
-    .state-msg {
-      text-align: center;
-      padding: 40px;
-      color: var(--muted);
-      font-size: 11px;
-      letter-spacing: 0.05em;
-    }
-
-    .spinner {
-      display: inline-block;
-      width: 20px;
-      height: 20px;
-      border: 2px solid var(--border);
-      border-top-color: var(--accent);
-      border-radius: 50%;
-      animation: spin 0.7s linear infinite;
-      margin-bottom: 10px;
-    }
-
-    @keyframes spin { to { transform: rotate(360deg); } }
-
-    .loading-overlay {
-      position: fixed;
-      inset: 0;
-      background: rgba(8,12,20,0.8);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      z-index: 100;
-      gap: 12px;
-      backdrop-filter: blur(4px);
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 0.2s;
-    }
-
-    .loading-overlay.show {
-      opacity: 1;
-      pointer-events: all;
-    }
-
-    .loading-text {
-      font-size: 11px;
-      color: var(--muted);
-      letter-spacing: 0.1em;
+    th, td {
+      padding: 8px;
+      border-bottom: 1px solid #334155;
     }
   </style>
 </head>
 
 <body>
 
-<!-- Loading -->
-<div class="loading-overlay" id="loader">
-  <div class="spinner"></div>
-  <div class="loading-text">FETCHING DATA...</div>
-</div>
-
 <!-- Sidebar -->
 <div class="sidebar">
-  <div class="logo-wrap">
-    <div class="logo-icon">OP</div>
-    <div class="logo-text">OPS<span>.</span></div>
-  </div>
+  <h2>OPS Dashboard</h2>
 
-  <div class="menu-label">Navigation</div>
-  <div class="menu" id="menu">
-    <div class="menu-item active" onclick="loadPage('main')" data-page="main">
-      <span class="menu-dot"></span> Overview
-    </div>
-    <div class="menu-item" onclick="loadPage('Daily Dashboard')" data-page="Daily Dashboard">
-      <span class="menu-dot"></span> Sales
-    </div>
-    <div class="menu-item" onclick="loadPage('Marketing Metrics')" data-page="Marketing Metrics">
-      <span class="menu-dot"></span> Marketing
-    </div>
-    <div class="menu-item" onclick="loadPage('Product Metrics')" data-page="Product Metrics">
-      <span class="menu-dot"></span> Product
-    </div>
-    <div class="menu-item" onclick="loadPage('Finance')" data-page="Finance">
-      <span class="menu-dot"></span> Finance
-    </div>
-    <div class="menu-item" onclick="loadPage('Supply Chain')" data-page="Supply Chain">
-      <span class="menu-dot"></span> Supply Chain
-    </div>
-    <div class="menu-item" onclick="loadPage('HR')" data-page="HR">
-      <span class="menu-dot"></span> HR
-    </div>
-  </div>
-
-  <div class="sidebar-footer">
-    v2.0 · OPS Platform
+  <div class="menu">
+    <div onclick="loadPage('main')" class="active">Main Dashboard</div>
+    <div onclick="loadPage('Daily Dashboard')">Sales</div>
+    <div onclick="loadPage('Marketing Metrics')">Marketing</div>
+    <div onclick="loadPage('Product Metrics')">Product</div>
+    <div onclick="loadPage('Finance')">Finance</div>
+    <div onclick="loadPage('Supply Chain')">Supply Chain</div>
+    <div onclick="loadPage('HR')">HR</div>
   </div>
 </div>
 
 <!-- Main -->
 <div class="main">
 
-  <div class="header">
-    <div class="header-left">
-      <h1 id="title">Overview</h1>
-      <div class="subtitle" id="subtitle">All departments · Consolidated view</div>
-    </div>
-    <div class="live-badge">
-      <div class="live-dot"></div> LIVE
-    </div>
-  </div>
+  <h2 id="title">Main Dashboard</h2>
 
   <div class="filters">
-    <span class="filter-label">Period</span>
-    <div class="filter-group">
-      <input type="date" id="start" />
-      <span class="filter-sep">→</span>
-      <input type="date" id="end" />
-    </div>
-    <button class="btn" onclick="applyFilter()">↻ Refresh</button>
+    <input type="date" id="start">
+    <input type="date" id="end">
+    <button onclick="applyFilter()">Apply</button>
   </div>
 
-  <div class="grid" id="kpis">
-    <div class="state-msg"><div class="spinner"></div></div>
-  </div>
+  <div class="grid" id="kpis"></div>
 
-  <!-- Dynamic charts area — Overview renders per-dept cards; dept view renders fixed 2-col -->
   <div id="charts-area"></div>
 
-  <div class="table-card">
-    <div class="table-header">
-      <div class="table-title">Raw Data</div>
-      <div class="table-count" id="row-count">— rows</div>
-    </div>
-    <div class="table-wrap">
-      <table id="table">
-        <thead></thead>
-        <tbody><tr><td colspan="99"><div class="state-msg">Loading...</div></td></tr></tbody>
-      </table>
-    </div>
-  </div>
+  <table id="table">
+    <thead></thead>
+    <tbody></tbody>
+  </table>
 
 </div>
 
 <script>
-const API = "https://script.google.com/macros/s/AKfycbxqM_jClfPETd7I7eDXXiCGQvs3RRzgBpQNUjh8mrh_wymG6DNabMOnQarSZxpODiVn/exec";
 
-const OVERVIEW_SHEETS = [
-  { key: "Daily Dashboard",   label: "Sales",        color: "#f97316" },
-  { key: "Marketing Metrics", label: "Marketing",    color: "#60a5fa" },
-  { key: "Finance",           label: "Finance",      color: "#34d399" },
-  { key: "Product Metrics",   label: "Product",      color: "#a78bfa" },
-  { key: "Supply Chain",      label: "Supply Chain", color: "#fb923c" },
-  { key: "HR",                label: "HR",           color: "#f87171" },
-];
-
-const SKIP_COLS = new Set(['date','day','week','month','year','period','name','label','category','type','id','source','channel','region','department','team']);
+const API = "YOUR_PUBLIC_URL";
 
 let currentSheet = "main";
-let activeCharts = [];
+let charts = [];
 
-Chart.defaults.color = '#64748b';
-Chart.defaults.borderColor = 'rgba(255,255,255,0.04)';
-Chart.defaults.font.family = "'DM Mono', monospace";
-Chart.defaults.font.size = 10;
+// Metric mapping
+const METRIC_MAP = {
+  "Daily Dashboard": "Revenue (₹)",
+  "Marketing Metrics": "Leads",
+  "Finance": "Collections (₹)",
+  "Product Metrics": "Attendance %",
+  "Supply Chain": "Orders Placed",
+  "HR": "Joinings"
+};
 
-/* ── Helpers ── */
-function setLoading(on) { document.getElementById('loader').classList.toggle('show', on); }
-
-function setActive(page) {
-  document.querySelectorAll('.menu-item').forEach(el =>
-    el.classList.toggle('active', el.dataset.page === page));
+// Clean number
+function cleanNumber(val) {
+  return parseFloat(String(val).replace(/[^0-9.-]+/g,"")) || 0;
 }
 
-function isMetricCol(col, val) {
-  if (SKIP_COLS.has((col||'').toLowerCase().trim())) return false;
-  return !isNaN(parseFloat(val));
+// Fetch
+async function fetchData(sheet, start, end) {
+  let url = `${API}?action=getData&sheet=${sheet}`;
+
+  if (start && end) {
+    url += `&start=${start}&end=${end}`;
+  }
+
+  const res = await fetch(url);
+  return await res.json();
 }
 
-function fmtNum(n) {
-  return n >= 1e6 ? (n/1e6).toFixed(1)+'M'
-       : n >= 1e3 ? (n/1e3).toFixed(1)+'K'
-       : n.toLocaleString(undefined, {maximumFractionDigits:1});
+// Apply filter
+function applyFilter() {
+  const start = document.getElementById("start").value;
+  const end = document.getElementById("end").value;
+
+  loadPage(currentSheet, start, end);
 }
 
-function destroyCharts() {
-  activeCharts.forEach(c => { try { c.destroy(); } catch(e){} });
-  activeCharts = [];
-}
-
-/* ── Fetch: unique nonce per call defeats GAS caching ── */
-async function fetchSheet(sheetName) {
-  const nonce = Math.random().toString(36).slice(2) + Date.now();
-  const url = `${API}?action=getData&sheet=${encodeURIComponent(sheetName)}&_=${nonce}`;
-  const res = await fetch(url, { cache: 'no-store' });
-  const raw = await res.json();
-  return Array.isArray(raw) ? raw : [];
-}
-
-/* ── Navigation ── */
-async function loadPage(sheet) {
+// Load page
+async function loadPage(sheet, start, end) {
   currentSheet = sheet;
-  setActive(sheet);
-  destroyCharts();
+  document.getElementById("title").innerText = sheet;
 
-  const meta = {
-    'main':             ['Overview',      'All departments · Consolidated view'],
-    'Daily Dashboard':  ['Sales',         'Daily performance metrics'],
-    'Marketing Metrics':['Marketing',     'Campaign & acquisition data'],
-    'Product Metrics':  ['Product',       'Feature & engagement metrics'],
-    'Finance':          ['Finance',       'Revenue, costs & margins'],
-    'Supply Chain':     ['Supply Chain',  'Inventory & logistics data'],
-    'HR':               ['HR',            'Headcount & people metrics'],
-  };
-  const [title, sub] = meta[sheet] || [sheet, ''];
-  document.getElementById('title').textContent = title;
-  document.getElementById('subtitle').textContent = sub;
-
-  if (sheet === 'main') {
-    await loadMainDashboard();
+  if (sheet === "main") {
+    loadMain(start, end);
   } else {
-    await loadDepartment(sheet);
+    loadDept(sheet, start, end);
   }
 }
 
-/* ── OVERVIEW: parallel fetch, stream each card as it resolves ── */
-async function loadMainDashboard() {
-  setLoading(false); // no blocking spinner — UI is live immediately
+// MAIN DASHBOARD
+async function loadMain(start, end) {
 
-  // 1. Render skeleton grid instantly
-  buildOverviewSkeletons();
-  document.getElementById('kpis').innerHTML = '<div class="state-msg"><div class="spinner"></div></div>';
+  const sheets = Object.keys(METRIC_MAP);
 
-  const allResults = [];
+  let all = [];
 
-  // 2. Fire all fetches simultaneously
-  const promises = OVERVIEW_SHEETS.map(s =>
-    fetchSheet(s.key)
-      .then(data => {
-        const r = { ...s, data };
-        allResults.push(r);
-        fillOverviewCard(r);                                        // paint card immediately
-        renderKPIs(allResults.flatMap(x => x.data));               // update KPI bar progressively
-      })
-      .catch(() => {
-        allResults.push({ ...s, data: [] });
-        markCardError(s.key);
-      })
-  );
+  for (let s of sheets) {
+    const data = await fetchData(s, start, end);
 
-  await Promise.all(promises);
-
-  // 3. Final table & debug once everything is in
-  renderTable(allResults.flatMap(r => r.data));
-  showDebugPanel(allResults);
-}
-
-/* ── Build skeleton placeholders — appears in <1ms ── */
-function buildOverviewSkeletons() {
-  // inject shimmer CSS once
-  if (!document.getElementById('shimmer-style')) {
-    const s = document.createElement('style');
-    s.id = 'shimmer-style';
-    s.textContent = `@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}`;
-    document.head.appendChild(s);
+    all.push({ sheet: s, data });
   }
 
-  const area = document.getElementById('charts-area');
-  area.innerHTML = '';
-  const grid = document.createElement('div');
-  grid.id = 'overview-grid';
-  grid.style.cssText = `display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px;margin-bottom:24px;`;
-  area.appendChild(grid);
+  renderMainKPIs(all);
+  renderMainCharts(all);
+}
 
-  OVERVIEW_SHEETS.forEach(s => {
-    const id = s.key.replace(/\s+/g,'-');
-    const card = document.createElement('div');
-    card.className = 'chart-card';
-    card.id = `dept-card-${id}`;
-    card.style.minHeight = '170px';
-    card.innerHTML = `
-      <div class="chart-header">
-        <div class="chart-title">${s.label}</div>
-        <div class="chart-tag" id="tag-${id}" style="background:${s.color}22;color:${s.color}">loading…</div>
+// KPIs
+function renderMainKPIs(all) {
+  const container = document.getElementById("kpis");
+  container.innerHTML = "";
+
+  all.forEach(d => {
+    if (!d.data.length) return;
+
+    const metric = METRIC_MAP[d.sheet];
+    const sum = d.data.reduce((a,b)=>a+cleanNumber(b[metric]),0);
+
+    container.innerHTML += `
+      <div class="card">
+        <h4>${d.sheet}</h4>
+        <h2>${sum.toLocaleString()}</h2>
       </div>
-      <div id="skel-${id}" style="height:120px;border-radius:6px;
-        background:linear-gradient(90deg,#121929 25%,#1e2d45 50%,#121929 75%);
-        background-size:200% 100%;animation:shimmer 1.4s infinite linear;"></div>
-      <canvas id="canvas-${id}" style="display:none;max-height:130px"></canvas>
     `;
-    grid.appendChild(card);
   });
 }
 
-/* ── Paint one card the moment its data arrives ── */
-function fillOverviewCard(r) {
-  const id = r.key.replace(/\s+/g,'-');
-  const skel   = document.getElementById(`skel-${id}`);
-  const canvas = document.getElementById(`canvas-${id}`);
-  const tag    = document.getElementById(`tag-${id}`);
-  if (!skel || !canvas) return;
+// Charts
+function renderMainCharts(all) {
+  destroyCharts();
+  const area = document.getElementById("charts-area");
+  area.innerHTML = "";
 
-  if (!r.data.length) {
-    skel.style.cssText = 'height:120px;display:flex;align-items:center;justify-content:center;color:#64748b;font-size:10px;animation:none;background:#121929;border-radius:6px;';
-    skel.textContent = 'No data';
-    tag.textContent = '—';
+  all.forEach(d => {
+    if (!d.data.length) return;
+
+    const metric = METRIC_MAP[d.sheet];
+
+    const canvas = document.createElement("canvas");
+    area.appendChild(canvas);
+
+    const labels = d.data.map(r => r["Date"]);
+    const values = d.data.map(r => cleanNumber(r[metric]));
+
+    const chart = new Chart(canvas, {
+      type: "line",
+      data: {
+        labels,
+        datasets: [{
+          label: d.sheet,
+          data: values
+        }]
+      }
+    });
+
+    charts.push(chart);
+  });
+}
+
+// DEPARTMENT PAGE
+async function loadDept(sheet, start, end) {
+
+  const data = await fetchData(sheet, start, end);
+
+  if (!data.length) {
+    document.getElementById("kpis").innerHTML = "No Data";
     return;
   }
 
-  const metricKey = Object.keys(r.data[0]).find(k => isMetricCol(k, r.data[0][k]));
-  if (!metricKey) { skel.style.display='none'; tag.textContent='—'; return; }
-
-  tag.textContent = metricKey;
-  skel.style.display = 'none';
-  canvas.style.display = 'block';
-
-  const ctx  = canvas.getContext('2d');
-  const vals = r.data.map(d => parseFloat(d[metricKey]) || 0);
-  const lbls = r.data.map(d => d['Date'] || d['date'] || '');
-
-  const grad = ctx.createLinearGradient(0, 0, 0, 130);
-  grad.addColorStop(0, r.color + '55');
-  grad.addColorStop(1, r.color + '00');
-
-  const c = new Chart(ctx, {
-    type: 'line',
-    data: {
-      labels: lbls,
-      datasets: [{ data: vals, borderColor: r.color, backgroundColor: grad,
-        borderWidth: 1.5, pointRadius: 0, tension: 0.4, fill: true }]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false, animation: { duration: 350 },
-      plugins: { legend: { display: false }, tooltip: {
-        backgroundColor:'#0d1320', borderColor:'rgba(255,255,255,0.08)',
-        borderWidth:1, titleColor:r.color, bodyColor:'#e2e8f0', padding:8
-      }},
-      scales: {
-        x: { display: false },
-        y: { ticks: { color:'#64748b', font:{size:9}, maxTicksLimit:4 }, grid: { color:'rgba(255,255,255,0.03)' } }
-      }
-    }
-  });
-  activeCharts.push(c);
+  renderKPIs(data);
+  renderDeptChart(sheet, data);
+  renderTable(data);
 }
 
-function markCardError(key) {
-  const id = key.replace(/\s+/g,'-');
-  const sk = document.getElementById(`skel-${id}`);
-  if (sk) { sk.style.cssText='height:120px;display:flex;align-items:center;justify-content:center;color:#f87171;font-size:10px;animation:none;background:#121929;border-radius:6px;'; sk.textContent='Failed to load'; }
-}
-
-/* ── Dept page ── */
-async function loadDepartment(sheet) {
-  setLoading(true);
-  try {
-    const data = await fetchSheet(sheet);
-    setLoading(false);
-    if (!data.length) { showError(); return; }
-    renderKPIs(data);
-    renderDeptCharts(data, sheet);
-    renderTable(data);
-  } catch(e) {
-    setLoading(false);
-    showError();
-  }
-}
-
-/* ── Debug panel ── */
-function showDebugPanel(results) {
-  const old = document.getElementById('debug-panel');
-  if (old) old.remove();
-
-  const panel = document.createElement('div');
-  panel.id = 'debug-panel';
-  panel.style.cssText = `background:#0d1320;border:1px solid rgba(249,115,22,0.25);border-radius:10px;padding:12px 16px;margin-bottom:20px;font-size:10px;font-family:'DM Mono',monospace;`;
-
-  const toggle = document.createElement('div');
-  toggle.style.cssText = `display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;`;
-  toggle.innerHTML = `<span style="color:#f97316;font-weight:600;letter-spacing:0.1em">⚙ API DEBUG — click to expand</span><span id="debug-chevron" style="color:#64748b">▼</span>`;
-
-  const body = document.createElement('div');
-  body.style.cssText = `display:none;margin-top:12px;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px;`;
-
-  results.forEach(r => {
-    const cols = r.data.length ? Object.keys(r.data[0]).join(', ') : '—';
-    const firstM = r.data.length ? (Object.keys(r.data[0]).find(k => isMetricCol(k, r.data[0][k])) || '—') : '—';
-    const div = document.createElement('div');
-    div.style.cssText = `background:#121929;border-radius:8px;padding:10px;border:1px solid rgba(255,255,255,0.05)`;
-    div.innerHTML = `<div style="color:${r.color};font-weight:600;margin-bottom:5px">${r.label} · ${r.data.length} rows</div>
-      <div style="color:#64748b;margin-bottom:3px">key metric: <span style="color:#e2e8f0">${firstM}</span></div>
-      <div style="color:#64748b;word-break:break-all">cols: <span style="color:#94a3b8">${cols}</span></div>`;
-    body.appendChild(div);
-  });
-
-  let open = false;
-  toggle.addEventListener('click', () => {
-    open = !open;
-    body.style.display = open ? 'grid' : 'none';
-    document.getElementById('debug-chevron').textContent = open ? '▲' : '▼';
-  });
-
-  panel.appendChild(toggle);
-  panel.appendChild(body);
-  document.getElementById('kpis').parentNode.insertBefore(panel, document.getElementById('kpis'));
-}
-
-function applyFilter() { loadPage(currentSheet); }
-function showError() { document.getElementById('kpis').innerHTML = `<div class="state-msg">⚠ Could not load data</div>`; }
-
-/* ── KPI cards ── */
+// KPI per dept
 function renderKPIs(data) {
   const container = document.getElementById("kpis");
   container.innerHTML = "";
-  if (!data.length) return;
 
-  const keys = Object.keys(data[0]).filter(k => isMetricCol(k, data[0][k]));
-  const emojis = ['◈','◉','◇','◆','▲','●','■','▶'];
-  let idx = 0;
+  const keys = Object.keys(data[0]);
 
   keys.forEach(k => {
-    const nums = data.map(d => parseFloat(d[k])).filter(v => !isNaN(v));
+    const nums = data.map(d => cleanNumber(d[k])).filter(v => v !== 0);
+
     if (!nums.length) return;
+
     const sum = nums.reduce((a,b)=>a+b,0);
+
     container.innerHTML += `
-      <div class="card" style="animation-delay:${idx*0.04}s">
-        <div class="card-label">${k}</div>
-        <div class="card-value">${fmtNum(sum)}</div>
-        <div class="card-change">↑ active</div>
-        <div class="card-bg">${emojis[idx % emojis.length]}</div>
-      </div>`;
-    idx++;
-  });
-
-  if (!idx) container.innerHTML = `<div class="state-msg">No numeric metrics found</div>`;
-}
-
-/* ── Dept charts: line + doughnut ── */
-function renderDeptCharts(data, sheetName) {
-  const area = document.getElementById('charts-area');
-  area.innerHTML = `
-    <div class="charts-row" style="margin-bottom:24px">
-      <div class="chart-card">
-        <div class="chart-header">
-          <div class="chart-title">Trend</div>
-          <div class="chart-tag" id="dept-metric-tag">—</div>
-        </div>
-        <canvas id="dept-line" style="max-height:200px"></canvas>
+      <div class="card">
+        <h4>${k}</h4>
+        <h2>${sum.toLocaleString()}</h2>
       </div>
-      <div class="chart-card">
-        <div class="chart-header">
-          <div class="chart-title">Distribution</div>
-          <div class="chart-tag">Summary</div>
-        </div>
-        <canvas id="dept-donut" style="max-height:200px"></canvas>
-      </div>
-    </div>
-  `;
-
-  const metricKeys = Object.keys(data[0]).filter(k => isMetricCol(k, data[0][k]));
-  const firstKey = metricKeys[0];
-  if (!firstKey) return;
-
-  document.getElementById('dept-metric-tag').textContent = firstKey;
-
-  requestAnimationFrame(() => {
-    const ctx = document.getElementById('dept-line').getContext('2d');
-    const labels = data.map(d => d['Date'] || d['date'] || '');
-    const values = data.map(d => parseFloat(d[firstKey]) || 0);
-    const grad = ctx.createLinearGradient(0, 0, 0, 200);
-    grad.addColorStop(0, 'rgba(249,115,22,0.3)');
-    grad.addColorStop(1, 'rgba(249,115,22,0)');
-
-    const c1 = new Chart(ctx, {
-      type: 'line',
-      data: { labels, datasets: [{ label: firstKey, data: values,
-        borderColor:'#f97316', backgroundColor:grad, borderWidth:2,
-        pointRadius: data.length>30?0:3, pointBackgroundColor:'#f97316',
-        pointBorderColor:'#080c14', pointBorderWidth:2, tension:0.4, fill:true }] },
-      options: {
-        responsive:true, maintainAspectRatio:false,
-        plugins:{ legend:{display:false}, tooltip:{backgroundColor:'#0d1320',borderColor:'rgba(255,255,255,0.08)',borderWidth:1,titleColor:'#f97316',bodyColor:'#e2e8f0',padding:10} },
-        scales:{
-          x:{ ticks:{maxTicksLimit:8,color:'#64748b',font:{size:9}}, grid:{color:'rgba(255,255,255,0.03)'} },
-          y:{ ticks:{color:'#64748b',font:{size:9}}, grid:{color:'rgba(255,255,255,0.03)'} }
-        }
-      }
-    });
-    activeCharts.push(c1);
-  });
-
-  requestAnimationFrame(() => {
-    const ctx2 = document.getElementById('dept-donut').getContext('2d');
-    const topKeys = metricKeys.slice(0, 6);
-    const sums = topKeys.map(k => data.reduce((s,d)=>s+(parseFloat(d[k])||0),0));
-    const colors = ['#f97316','#fb923c','#60a5fa','#34d399','#a78bfa','#f87171'];
-
-    const c2 = new Chart(ctx2, {
-      type: 'doughnut',
-      data: { labels: topKeys, datasets:[{ data:sums,
-        backgroundColor:colors.map(c=>c+'99'), borderColor:colors, borderWidth:2, hoverOffset:4 }] },
-      options: {
-        responsive:true,
-        plugins:{
-          legend:{position:'bottom',labels:{color:'#64748b',font:{size:9},padding:8,boxWidth:10}},
-          tooltip:{backgroundColor:'#0d1320',borderColor:'rgba(255,255,255,0.08)',borderWidth:1,titleColor:'#f97316',bodyColor:'#e2e8f0',padding:10}
-        },
-        cutout:'65%'
-      }
-    });
-    activeCharts.push(c2);
+    `;
   });
 }
 
-/* ── Table ── */
+// Dept chart
+function renderDeptChart(sheet, data) {
+  destroyCharts();
+
+  const area = document.getElementById("charts-area");
+  area.innerHTML = "";
+
+  const metric = METRIC_MAP[sheet];
+
+  const canvas = document.createElement("canvas");
+  area.appendChild(canvas);
+
+  const labels = data.map(d => d["Date"]);
+  const values = data.map(d => cleanNumber(d[metric]));
+
+  const chart = new Chart(canvas, {
+    type: "line",
+    data: {
+      labels,
+      datasets: [{
+        label: metric,
+        data: values
+      }]
+    }
+  });
+
+  charts.push(chart);
+}
+
+// Table
 function renderTable(data) {
   const thead = document.querySelector("#table thead");
   const tbody = document.querySelector("#table tbody");
-  thead.innerHTML = ""; tbody.innerHTML = "";
-  document.getElementById('row-count').textContent = `${data.length} rows`;
-  if (!data.length) { tbody.innerHTML=`<tr><td colspan="99"><div class="state-msg">No rows</div></td></tr>`; return; }
+
+  thead.innerHTML = "";
+  tbody.innerHTML = "";
 
   const headers = Object.keys(data[0]);
-  thead.innerHTML = "<tr>" + headers.map(h=>`<th>${h}</th>`).join("") + "</tr>";
 
-  const CHUNK = 50;
-  data.slice(0, CHUNK).forEach(row => {
-    const tr = document.createElement('tr');
-    tr.innerHTML = headers.map(h=>`<td>${row[h]??'—'}</td>`).join('');
-    tbody.appendChild(tr);
+  thead.innerHTML = "<tr>" + headers.map(h => `<th>${h}</th>`).join("") + "</tr>";
+
+  data.forEach(row => {
+    tbody.innerHTML += "<tr>" + headers.map(h => `<td>${row[h]}</td>`).join("") + "</tr>";
   });
-
-  if (data.length > CHUNK) {
-    const tr = document.createElement('tr');
-    tr.innerHTML = `<td colspan="${headers.length}" style="text-align:center;color:var(--muted);font-size:10px;padding:12px">Showing ${CHUNK} of ${data.length} rows</td>`;
-    tbody.appendChild(tr);
-  }
 }
 
-loadMainDashboard();
+// Destroy charts
+function destroyCharts() {
+  charts.forEach(c => c.destroy());
+  charts = [];
+}
+
+// Init
+loadMain();
+
 </script>
+
 </body>
 </html>
