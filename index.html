@@ -619,22 +619,8 @@
     <div class="state-msg"><div class="spinner"></div></div>
   </div>
 
-  <div class="charts-row">
-    <div class="chart-card">
-      <div class="chart-header">
-        <div class="chart-title">Trend</div>
-        <div class="chart-tag" id="chart-metric">—</div>
-      </div>
-      <canvas id="chart"></canvas>
-    </div>
-    <div class="chart-card">
-      <div class="chart-header">
-        <div class="chart-title">Distribution</div>
-        <div class="chart-tag">Summary</div>
-      </div>
-      <canvas id="chart2"></canvas>
-    </div>
-  </div>
+  <!-- Dynamic charts area — Overview renders per-dept cards; dept view renders fixed 2-col -->
+  <div id="charts-area"></div>
 
   <div class="table-card">
     <div class="table-header">
@@ -653,38 +639,75 @@
 
 <script>
 const API = "https://script.google.com/macros/s/AKfycbxqM_jClfPETd7I7eDXXiCGQvs3RRzgBpQNUjh8mrh_wymG6DNabMOnQarSZxpODiVn/exec";
+
+const OVERVIEW_SHEETS = [
+  { key: "Daily Dashboard",   label: "Sales",        color: "#f97316" },
+  { key: "Marketing Metrics", label: "Marketing",    color: "#60a5fa" },
+  { key: "Finance",           label: "Finance",      color: "#34d399" },
+  { key: "Product Metrics",   label: "Product",      color: "#a78bfa" },
+  { key: "Supply Chain",      label: "Supply Chain", color: "#fb923c" },
+  { key: "HR",                label: "HR",           color: "#f87171" },
+];
+
+const SKIP_COLS = new Set(['date','day','week','month','year','period','name','label','category','type','id','source','channel','region','department','team']);
+
 let currentSheet = "main";
-let chart, chart2;
+let activeCharts = [];
 
 Chart.defaults.color = '#64748b';
 Chart.defaults.borderColor = 'rgba(255,255,255,0.04)';
 Chart.defaults.font.family = "'DM Mono', monospace";
 Chart.defaults.font.size = 10;
 
-function setLoading(on) {
-  document.getElementById('loader').classList.toggle('show', on);
-}
+/* ── Helpers ── */
+function setLoading(on) { document.getElementById('loader').classList.toggle('show', on); }
 
 function setActive(page) {
-  document.querySelectorAll('.menu-item').forEach(el => {
-    el.classList.toggle('active', el.dataset.page === page);
-  });
+  document.querySelectorAll('.menu-item').forEach(el =>
+    el.classList.toggle('active', el.dataset.page === page));
 }
 
+function isMetricCol(col, val) {
+  if (SKIP_COLS.has((col||'').toLowerCase().trim())) return false;
+  return !isNaN(parseFloat(val));
+}
+
+function fmtNum(n) {
+  return n >= 1e6 ? (n/1e6).toFixed(1)+'M'
+       : n >= 1e3 ? (n/1e3).toFixed(1)+'K'
+       : n.toLocaleString(undefined, {maximumFractionDigits:1});
+}
+
+function destroyCharts() {
+  activeCharts.forEach(c => { try { c.destroy(); } catch(e){} });
+  activeCharts = [];
+}
+
+/* ── Fetch: unique nonce per call defeats GAS caching ── */
+async function fetchSheet(sheetName) {
+  const nonce = Math.random().toString(36).slice(2) + Date.now();
+  const url = `${API}?action=getData&sheet=${encodeURIComponent(sheetName)}&_=${nonce}`;
+  const res = await fetch(url, { cache: 'no-store' });
+  const raw = await res.json();
+  return Array.isArray(raw) ? raw : [];
+}
+
+/* ── Navigation ── */
 async function loadPage(sheet) {
   currentSheet = sheet;
   setActive(sheet);
+  destroyCharts();
 
-  const labels = {
-    'main': ['Overview', 'All departments · Consolidated view'],
-    'Daily Dashboard': ['Sales', 'Daily performance metrics'],
-    'Marketing Metrics': ['Marketing', 'Campaign & acquisition data'],
-    'Product Metrics': ['Product', 'Feature & engagement metrics'],
-    'Finance': ['Finance', 'Revenue, costs & margins'],
-    'Supply Chain': ['Supply Chain', 'Inventory & logistics data'],
-    'HR': ['HR', 'Headcount & people metrics'],
+  const meta = {
+    'main':             ['Overview',      'All departments · Consolidated view'],
+    'Daily Dashboard':  ['Sales',         'Daily performance metrics'],
+    'Marketing Metrics':['Marketing',     'Campaign & acquisition data'],
+    'Product Metrics':  ['Product',       'Feature & engagement metrics'],
+    'Finance':          ['Finance',       'Revenue, costs & margins'],
+    'Supply Chain':     ['Supply Chain',  'Inventory & logistics data'],
+    'HR':               ['HR',            'Headcount & people metrics'],
   };
-  const [title, sub] = labels[sheet] || [sheet, ''];
+  const [title, sub] = meta[sheet] || [sheet, ''];
   document.getElementById('title').textContent = title;
   document.getElementById('subtitle').textContent = sub;
 
@@ -695,209 +718,318 @@ async function loadPage(sheet) {
   }
 }
 
+/* ── OVERVIEW: parallel fetch, stream each card as it resolves ── */
 async function loadMainDashboard() {
-  setLoading(true);
-  const sheets = ["Daily Dashboard","Marketing Metrics","Finance"];
-  let combined = [];
-  for (let s of sheets) {
-    try {
-      const res = await fetch(`${API}?action=getData&sheet=${s}`);
-      const data = await res.json();
-      combined = combined.concat(data);
-    } catch(e) {}
-  }
-  setLoading(false);
-  renderAll(combined);
+  setLoading(false); // no blocking spinner — UI is live immediately
+
+  // 1. Render skeleton grid instantly
+  buildOverviewSkeletons();
+  document.getElementById('kpis').innerHTML = '<div class="state-msg"><div class="spinner"></div></div>';
+
+  const allResults = [];
+
+  // 2. Fire all fetches simultaneously
+  const promises = OVERVIEW_SHEETS.map(s =>
+    fetchSheet(s.key)
+      .then(data => {
+        const r = { ...s, data };
+        allResults.push(r);
+        fillOverviewCard(r);                                        // paint card immediately
+        renderKPIs(allResults.flatMap(x => x.data));               // update KPI bar progressively
+      })
+      .catch(() => {
+        allResults.push({ ...s, data: [] });
+        markCardError(s.key);
+      })
+  );
+
+  await Promise.all(promises);
+
+  // 3. Final table & debug once everything is in
+  renderTable(allResults.flatMap(r => r.data));
+  showDebugPanel(allResults);
 }
 
+/* ── Build skeleton placeholders — appears in <1ms ── */
+function buildOverviewSkeletons() {
+  // inject shimmer CSS once
+  if (!document.getElementById('shimmer-style')) {
+    const s = document.createElement('style');
+    s.id = 'shimmer-style';
+    s.textContent = `@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}`;
+    document.head.appendChild(s);
+  }
+
+  const area = document.getElementById('charts-area');
+  area.innerHTML = '';
+  const grid = document.createElement('div');
+  grid.id = 'overview-grid';
+  grid.style.cssText = `display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px;margin-bottom:24px;`;
+  area.appendChild(grid);
+
+  OVERVIEW_SHEETS.forEach(s => {
+    const id = s.key.replace(/\s+/g,'-');
+    const card = document.createElement('div');
+    card.className = 'chart-card';
+    card.id = `dept-card-${id}`;
+    card.style.minHeight = '170px';
+    card.innerHTML = `
+      <div class="chart-header">
+        <div class="chart-title">${s.label}</div>
+        <div class="chart-tag" id="tag-${id}" style="background:${s.color}22;color:${s.color}">loading…</div>
+      </div>
+      <div id="skel-${id}" style="height:120px;border-radius:6px;
+        background:linear-gradient(90deg,#121929 25%,#1e2d45 50%,#121929 75%);
+        background-size:200% 100%;animation:shimmer 1.4s infinite linear;"></div>
+      <canvas id="canvas-${id}" style="display:none;max-height:130px"></canvas>
+    `;
+    grid.appendChild(card);
+  });
+}
+
+/* ── Paint one card the moment its data arrives ── */
+function fillOverviewCard(r) {
+  const id = r.key.replace(/\s+/g,'-');
+  const skel   = document.getElementById(`skel-${id}`);
+  const canvas = document.getElementById(`canvas-${id}`);
+  const tag    = document.getElementById(`tag-${id}`);
+  if (!skel || !canvas) return;
+
+  if (!r.data.length) {
+    skel.style.cssText = 'height:120px;display:flex;align-items:center;justify-content:center;color:#64748b;font-size:10px;animation:none;background:#121929;border-radius:6px;';
+    skel.textContent = 'No data';
+    tag.textContent = '—';
+    return;
+  }
+
+  const metricKey = Object.keys(r.data[0]).find(k => isMetricCol(k, r.data[0][k]));
+  if (!metricKey) { skel.style.display='none'; tag.textContent='—'; return; }
+
+  tag.textContent = metricKey;
+  skel.style.display = 'none';
+  canvas.style.display = 'block';
+
+  const ctx  = canvas.getContext('2d');
+  const vals = r.data.map(d => parseFloat(d[metricKey]) || 0);
+  const lbls = r.data.map(d => d['Date'] || d['date'] || '');
+
+  const grad = ctx.createLinearGradient(0, 0, 0, 130);
+  grad.addColorStop(0, r.color + '55');
+  grad.addColorStop(1, r.color + '00');
+
+  const c = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: lbls,
+      datasets: [{ data: vals, borderColor: r.color, backgroundColor: grad,
+        borderWidth: 1.5, pointRadius: 0, tension: 0.4, fill: true }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false, animation: { duration: 350 },
+      plugins: { legend: { display: false }, tooltip: {
+        backgroundColor:'#0d1320', borderColor:'rgba(255,255,255,0.08)',
+        borderWidth:1, titleColor:r.color, bodyColor:'#e2e8f0', padding:8
+      }},
+      scales: {
+        x: { display: false },
+        y: { ticks: { color:'#64748b', font:{size:9}, maxTicksLimit:4 }, grid: { color:'rgba(255,255,255,0.03)' } }
+      }
+    }
+  });
+  activeCharts.push(c);
+}
+
+function markCardError(key) {
+  const id = key.replace(/\s+/g,'-');
+  const sk = document.getElementById(`skel-${id}`);
+  if (sk) { sk.style.cssText='height:120px;display:flex;align-items:center;justify-content:center;color:#f87171;font-size:10px;animation:none;background:#121929;border-radius:6px;'; sk.textContent='Failed to load'; }
+}
+
+/* ── Dept page ── */
 async function loadDepartment(sheet) {
   setLoading(true);
   try {
-    const res = await fetch(`${API}?action=getData&sheet=${sheet}`);
-    const data = await res.json();
+    const data = await fetchSheet(sheet);
     setLoading(false);
-    renderAll(data);
+    if (!data.length) { showError(); return; }
+    renderKPIs(data);
+    renderDeptCharts(data, sheet);
+    renderTable(data);
   } catch(e) {
     setLoading(false);
     showError();
   }
 }
 
-function applyFilter() { loadPage(currentSheet); }
+/* ── Debug panel ── */
+function showDebugPanel(results) {
+  const old = document.getElementById('debug-panel');
+  if (old) old.remove();
 
-function showError() {
-  document.getElementById('kpis').innerHTML = `<div class="state-msg">⚠ Could not load data</div>`;
+  const panel = document.createElement('div');
+  panel.id = 'debug-panel';
+  panel.style.cssText = `background:#0d1320;border:1px solid rgba(249,115,22,0.25);border-radius:10px;padding:12px 16px;margin-bottom:20px;font-size:10px;font-family:'DM Mono',monospace;`;
+
+  const toggle = document.createElement('div');
+  toggle.style.cssText = `display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;`;
+  toggle.innerHTML = `<span style="color:#f97316;font-weight:600;letter-spacing:0.1em">⚙ API DEBUG — click to expand</span><span id="debug-chevron" style="color:#64748b">▼</span>`;
+
+  const body = document.createElement('div');
+  body.style.cssText = `display:none;margin-top:12px;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px;`;
+
+  results.forEach(r => {
+    const cols = r.data.length ? Object.keys(r.data[0]).join(', ') : '—';
+    const firstM = r.data.length ? (Object.keys(r.data[0]).find(k => isMetricCol(k, r.data[0][k])) || '—') : '—';
+    const div = document.createElement('div');
+    div.style.cssText = `background:#121929;border-radius:8px;padding:10px;border:1px solid rgba(255,255,255,0.05)`;
+    div.innerHTML = `<div style="color:${r.color};font-weight:600;margin-bottom:5px">${r.label} · ${r.data.length} rows</div>
+      <div style="color:#64748b;margin-bottom:3px">key metric: <span style="color:#e2e8f0">${firstM}</span></div>
+      <div style="color:#64748b;word-break:break-all">cols: <span style="color:#94a3b8">${cols}</span></div>`;
+    body.appendChild(div);
+  });
+
+  let open = false;
+  toggle.addEventListener('click', () => {
+    open = !open;
+    body.style.display = open ? 'grid' : 'none';
+    document.getElementById('debug-chevron').textContent = open ? '▲' : '▼';
+  });
+
+  panel.appendChild(toggle);
+  panel.appendChild(body);
+  document.getElementById('kpis').parentNode.insertBefore(panel, document.getElementById('kpis'));
 }
 
+function applyFilter() { loadPage(currentSheet); }
+function showError() { document.getElementById('kpis').innerHTML = `<div class="state-msg">⚠ Could not load data</div>`; }
+
+/* ── KPI cards ── */
 function renderKPIs(data) {
   const container = document.getElementById("kpis");
   container.innerHTML = "";
-  const keys = Object.keys(data[0]);
-  const emojis = ['◈', '◉', '◇', '◆', '▲', '●', '■', '▶'];
+  if (!data.length) return;
+
+  const keys = Object.keys(data[0]).filter(k => isMetricCol(k, data[0][k]));
+  const emojis = ['◈','◉','◇','◆','▲','●','■','▶'];
   let idx = 0;
+
   keys.forEach(k => {
     const nums = data.map(d => parseFloat(d[k])).filter(v => !isNaN(v));
-    if (nums.length) {
-      const sum = nums.reduce((a,b)=>a+b,0);
-      const fmt = sum > 1e6 ? (sum/1e6).toFixed(1)+'M'
-                : sum > 1e3 ? (sum/1e3).toFixed(1)+'K'
-                : sum.toLocaleString();
-      const delay = idx * 0.05;
-      container.innerHTML += `
-        <div class="card" style="animation-delay:${delay}s">
-          <div class="card-label">${k}</div>
-          <div class="card-value">${fmt}</div>
-          <div class="card-change">↑ active</div>
-          <div class="card-bg">${emojis[idx % emojis.length]}</div>
-        </div>`;
-      idx++;
-    }
+    if (!nums.length) return;
+    const sum = nums.reduce((a,b)=>a+b,0);
+    container.innerHTML += `
+      <div class="card" style="animation-delay:${idx*0.04}s">
+        <div class="card-label">${k}</div>
+        <div class="card-value">${fmtNum(sum)}</div>
+        <div class="card-change">↑ active</div>
+        <div class="card-bg">${emojis[idx % emojis.length]}</div>
+      </div>`;
+    idx++;
   });
-  if (!idx) container.innerHTML = `<div class="state-msg">No numeric data found</div>`;
+
+  if (!idx) container.innerHTML = `<div class="state-msg">No numeric metrics found</div>`;
 }
 
-function renderChart(data) {
-  const ctx = document.getElementById("chart").getContext('2d');
-  const key = Object.keys(data[0]).find(k => !isNaN(parseFloat(data[0][k])));
-  if (!key) return;
+/* ── Dept charts: line + doughnut ── */
+function renderDeptCharts(data, sheetName) {
+  const area = document.getElementById('charts-area');
+  area.innerHTML = `
+    <div class="charts-row" style="margin-bottom:24px">
+      <div class="chart-card">
+        <div class="chart-header">
+          <div class="chart-title">Trend</div>
+          <div class="chart-tag" id="dept-metric-tag">—</div>
+        </div>
+        <canvas id="dept-line" style="max-height:200px"></canvas>
+      </div>
+      <div class="chart-card">
+        <div class="chart-header">
+          <div class="chart-title">Distribution</div>
+          <div class="chart-tag">Summary</div>
+        </div>
+        <canvas id="dept-donut" style="max-height:200px"></canvas>
+      </div>
+    </div>
+  `;
 
-  document.getElementById('chart-metric').textContent = key;
+  const metricKeys = Object.keys(data[0]).filter(k => isMetricCol(k, data[0][k]));
+  const firstKey = metricKeys[0];
+  if (!firstKey) return;
 
-  const labels = data.map(d => d["Date"] || '—');
-  const values = data.map(d => parseFloat(d[key]) || 0);
+  document.getElementById('dept-metric-tag').textContent = firstKey;
 
-  if (chart) chart.destroy();
+  requestAnimationFrame(() => {
+    const ctx = document.getElementById('dept-line').getContext('2d');
+    const labels = data.map(d => d['Date'] || d['date'] || '');
+    const values = data.map(d => parseFloat(d[firstKey]) || 0);
+    const grad = ctx.createLinearGradient(0, 0, 0, 200);
+    grad.addColorStop(0, 'rgba(249,115,22,0.3)');
+    grad.addColorStop(1, 'rgba(249,115,22,0)');
 
-  const gradient = ctx.createLinearGradient(0, 0, 0, 200);
-  gradient.addColorStop(0, 'rgba(249,115,22,0.3)');
-  gradient.addColorStop(1, 'rgba(249,115,22,0)');
-
-  chart = new Chart(ctx, {
-    type: 'line',
-    data: {
-      labels,
-      datasets: [{
-        label: key,
-        data: values,
-        borderColor: '#f97316',
-        backgroundColor: gradient,
-        borderWidth: 2,
-        pointRadius: data.length > 30 ? 0 : 3,
-        pointBackgroundColor: '#f97316',
-        pointBorderColor: '#080c14',
-        pointBorderWidth: 2,
-        tension: 0.4,
-        fill: true,
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: true,
-      plugins: {
-        legend: { display: false },
-        tooltip: {
-          backgroundColor: '#0d1320',
-          borderColor: 'rgba(255,255,255,0.08)',
-          borderWidth: 1,
-          titleColor: '#f97316',
-          bodyColor: '#e2e8f0',
-          padding: 10,
-        }
-      },
-      scales: {
-        x: {
-          ticks: { maxTicksLimit: 8, color: '#64748b', font: { size: 9 } },
-          grid: { color: 'rgba(255,255,255,0.03)' },
-        },
-        y: {
-          ticks: { color: '#64748b', font: { size: 9 } },
-          grid: { color: 'rgba(255,255,255,0.03)' },
+    const c1 = new Chart(ctx, {
+      type: 'line',
+      data: { labels, datasets: [{ label: firstKey, data: values,
+        borderColor:'#f97316', backgroundColor:grad, borderWidth:2,
+        pointRadius: data.length>30?0:3, pointBackgroundColor:'#f97316',
+        pointBorderColor:'#080c14', pointBorderWidth:2, tension:0.4, fill:true }] },
+      options: {
+        responsive:true, maintainAspectRatio:false,
+        plugins:{ legend:{display:false}, tooltip:{backgroundColor:'#0d1320',borderColor:'rgba(255,255,255,0.08)',borderWidth:1,titleColor:'#f97316',bodyColor:'#e2e8f0',padding:10} },
+        scales:{
+          x:{ ticks:{maxTicksLimit:8,color:'#64748b',font:{size:9}}, grid:{color:'rgba(255,255,255,0.03)'} },
+          y:{ ticks:{color:'#64748b',font:{size:9}}, grid:{color:'rgba(255,255,255,0.03)'} }
         }
       }
-    }
+    });
+    activeCharts.push(c1);
   });
-}
 
-function renderChart2(data) {
-  const ctx2 = document.getElementById("chart2").getContext('2d');
-  const numKeys = Object.keys(data[0]).filter(k => !isNaN(parseFloat(data[0][k])));
-  const topKeys = numKeys.slice(0, 5);
-  const sums = topKeys.map(k => data.reduce((s, d) => s + (parseFloat(d[k]) || 0), 0));
+  requestAnimationFrame(() => {
+    const ctx2 = document.getElementById('dept-donut').getContext('2d');
+    const topKeys = metricKeys.slice(0, 6);
+    const sums = topKeys.map(k => data.reduce((s,d)=>s+(parseFloat(d[k])||0),0));
+    const colors = ['#f97316','#fb923c','#60a5fa','#34d399','#a78bfa','#f87171'];
 
-  if (chart2) chart2.destroy();
-
-  const colors = ['#f97316','#fb923c','#60a5fa','#34d399','#a78bfa'];
-
-  chart2 = new Chart(ctx2, {
-    type: 'doughnut',
-    data: {
-      labels: topKeys,
-      datasets: [{
-        data: sums,
-        backgroundColor: colors.map(c => c + '99'),
-        borderColor: colors,
-        borderWidth: 2,
-        hoverOffset: 4,
-      }]
-    },
-    options: {
-      responsive: true,
-      plugins: {
-        legend: {
-          position: 'bottom',
-          labels: { color: '#64748b', font: { size: 9 }, padding: 8, boxWidth: 10 }
+    const c2 = new Chart(ctx2, {
+      type: 'doughnut',
+      data: { labels: topKeys, datasets:[{ data:sums,
+        backgroundColor:colors.map(c=>c+'99'), borderColor:colors, borderWidth:2, hoverOffset:4 }] },
+      options: {
+        responsive:true,
+        plugins:{
+          legend:{position:'bottom',labels:{color:'#64748b',font:{size:9},padding:8,boxWidth:10}},
+          tooltip:{backgroundColor:'#0d1320',borderColor:'rgba(255,255,255,0.08)',borderWidth:1,titleColor:'#f97316',bodyColor:'#e2e8f0',padding:10}
         },
-        tooltip: {
-          backgroundColor: '#0d1320',
-          borderColor: 'rgba(255,255,255,0.08)',
-          borderWidth: 1,
-          titleColor: '#f97316',
-          bodyColor: '#e2e8f0',
-          padding: 10,
-        }
-      },
-      cutout: '65%',
-    }
+        cutout:'65%'
+      }
+    });
+    activeCharts.push(c2);
   });
 }
 
+/* ── Table ── */
 function renderTable(data) {
   const thead = document.querySelector("#table thead");
   const tbody = document.querySelector("#table tbody");
-  thead.innerHTML = "";
-  tbody.innerHTML = "";
-
+  thead.innerHTML = ""; tbody.innerHTML = "";
   document.getElementById('row-count').textContent = `${data.length} rows`;
+  if (!data.length) { tbody.innerHTML=`<tr><td colspan="99"><div class="state-msg">No rows</div></td></tr>`; return; }
 
   const headers = Object.keys(data[0]);
-  thead.innerHTML = "<tr>" + headers.map(h => `<th>${h}</th>`).join("") + "</tr>";
+  thead.innerHTML = "<tr>" + headers.map(h=>`<th>${h}</th>`).join("") + "</tr>";
 
   const CHUNK = 50;
-  const slice = data.slice(0, CHUNK);
-
-  slice.forEach(row => {
+  data.slice(0, CHUNK).forEach(row => {
     const tr = document.createElement('tr');
-    tr.innerHTML = headers.map(h => `<td>${row[h] ?? '—'}</td>`).join('');
+    tr.innerHTML = headers.map(h=>`<td>${row[h]??'—'}</td>`).join('');
     tbody.appendChild(tr);
   });
 
   if (data.length > CHUNK) {
     const tr = document.createElement('tr');
-    tr.innerHTML = `<td colspan="${headers.length}" style="text-align:center;color:var(--muted);font-size:10px;padding:12px">
-      Showing ${CHUNK} of ${data.length} rows</td>`;
+    tr.innerHTML = `<td colspan="${headers.length}" style="text-align:center;color:var(--muted);font-size:10px;padding:12px">Showing ${CHUNK} of ${data.length} rows</td>`;
     tbody.appendChild(tr);
   }
-}
-
-function renderAll(data) {
-  if (!data || !data.length) {
-    document.getElementById('kpis').innerHTML = `<div class="state-msg">No data available</div>`;
-    return;
-  }
-  renderKPIs(data);
-  renderChart(data);
-  renderChart2(data);
-  renderTable(data);
 }
 
 loadMainDashboard();
