@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Company Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <style>
+    body {
+      font-family: Inter;
+      background: #0f172a;
+      color: white;
+      padding: 20px;
+    }
+
+    h2 {
+      margin-bottom: 10px;
+    }
+
+    select {
+      padding: 10px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+
+    .card {
+      background: #1e293b;
+      padding: 15px;
+      border-radius: 12px;
+      text-align: center;
+    }
+
+    canvas {
+      background: #1e293b;
+      border-radius: 12px;
+      padding: 20px;
+    }
+  </style>
+</head>
+
+<body>
+
+<h2>📊 Company Dashboard</h2>
+
+<select id="sheetSelect"></select>
+
+<div class="grid" id="kpis"></div>
+
+<canvas id="chart"></canvas>
+
+<script>
+
+const API = "https://script.google.com/a/macros/skillinabox.in/s/AKfycbxqM_jClfPETd7I7eDXXiCGQvs3RRzgBpQNUjh8mrh_wymG6DNabMOnQarSZxpODiVn/exec";
+let chart;
+
+
+// ✅ Load sheets
+async function loadSheets() {
+  const res = await fetch(`${API}?action=getSheets`);
+  const sheets = await res.json();
+
+  const select = document.getElementById("sheetSelect");
+
+  sheets.forEach(s => {
+    const opt = document.createElement("option");
+    opt.value = s;
+    opt.textContent = s;
+    select.appendChild(opt);
+  });
+
+  loadData(select.value);
+}
+
+
+// ✅ Load data
+async function loadData(sheet) {
+  const res = await fetch(`${API}?action=getData&sheet=${sheet}`);
+  const data = await res.json();
+
+  if (!data.length) return;
+
+  renderKPIs(data);
+  renderChart(sheet, data);
+}
+
+
+// ✅ KPI LOGIC (SMART 🔥)
+function renderKPIs(data) {
+  const container = document.getElementById("kpis");
+  container.innerHTML = "";
+
+  const keys = Object.keys(data[0]);
+
+  keys.forEach(k => {
+    const values = data.map(d => parseFloat(d[k])).filter(v => !isNaN(v));
+
+    if (values.length > 0) {
+      const sum = values.reduce((a,b) => a+b,0);
+
+      const card = `
+        <div class="card">
+          <h4>${k}</h4>
+          <h2>${sum}</h2>
+        </div>
+      `;
+
+      container.innerHTML += card;
+    }
+  });
+}
+
+
+// ✅ CHART LOGIC (AUTO DETECT)
+function renderChart(sheet, data) {
+  const ctx = document.getElementById("chart");
+
+  const keys = Object.keys(data[0]);
+  const numericKey = keys.find(k => !isNaN(parseFloat(data[0][k])));
+
+  const labels = data.map(d => d["Date"] || "");
+  const values = data.map(d => parseFloat(d[numericKey]) || 0);
+
+  if (chart) chart.destroy();
+
+  chart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        label: numericKey,
+        data: values,
+        tension: 0.3
+      }]
+    }
+  });
+}
+
+
+// change event
+document.getElementById("sheetSelect")
+  .addEventListener("change", (e) => {
+    loadData(e.target.value);
+  });
+
+
+loadSheets();
+
+</script>
+
+</body>
+</html>
