@@ -557,7 +557,7 @@
 <div class="sidebar">
   <div class="logo-wrap">
     <div class="logo-icon">OP</div>
-    <div class="logo-text">OPS<span>.</span></div>
+    <div class="logo-text">Operations<span>.</span></div>
   </div>
 
   <div class="menu-label">Navigation</div>
@@ -621,7 +621,7 @@
 
   <div id="charts-area"></div>
 
-  <div class="table-card">
+  <div class="table-card" id="raw-data-section">
     <div class="table-header">
       <div class="table-title">Raw Data</div>
       <div class="table-count" id="row-count">— rows</div>
@@ -683,7 +683,7 @@ function destroyCharts() {
   activeCharts = [];
 }
 
-/* ── Fetch: unique nonce per call defeats GAS caching + captures dates ── */
+/* ── Fetch ── */
 async function fetchSheet(sheetName) {
   const start = document.getElementById('start').value;
   const end = document.getElementById('end').value;
@@ -733,24 +733,25 @@ async function loadPage(sheet) {
   }
 }
 
-/* ── OVERVIEW: parallel fetch, stream each card as it resolves ── */
+/* ── OVERVIEW ── */
 async function loadMainDashboard() {
-  setLoading(false); // no blocking spinner — UI is live immediately
+  setLoading(false); 
+  
+  // FIXED: Hide the raw data table on the overview page
+  document.getElementById('raw-data-section').style.display = 'none';
 
-  // 1. Render skeleton grid instantly
   buildOverviewSkeletons();
   document.getElementById('kpis').innerHTML = '<div class="state-msg"><div class="spinner"></div></div>';
 
   const allResults = [];
 
-  // 2. Fire all fetches simultaneously
   const promises = OVERVIEW_SHEETS.map(s =>
     fetchSheet(s.key)
       .then(data => {
         const r = { ...s, data };
         allResults.push(r);
-        fillOverviewCard(r);                                       // paint card immediately
-        renderKPIs(allResults.flatMap(x => x.data));               // update KPI bar progressively
+        fillOverviewCard(r);                                       
+        renderKPIs(allResults.flatMap(x => x.data));               
       })
       .catch(() => {
         allResults.push({ ...s, data: [] });
@@ -759,15 +760,11 @@ async function loadMainDashboard() {
   );
 
   await Promise.all(promises);
-
-  // 3. Final table & debug once everything is in
-  renderTable(allResults.flatMap(r => r.data));
-  showDebugPanel(allResults);
+  // FIXED: Removed renderTable call from here
 }
 
-/* ── Build skeleton placeholders — appears in <1ms ── */
+/* ── Build Skeletons ── */
 function buildOverviewSkeletons() {
-  // inject shimmer CSS once
   if (!document.getElementById('shimmer-style')) {
     const s = document.createElement('style');
     s.id = 'shimmer-style';
@@ -802,7 +799,7 @@ function buildOverviewSkeletons() {
   });
 }
 
-/* ── Paint one card the moment its data arrives ── */
+/* ── Fill Overview Cards ── */
 function fillOverviewCard(r) {
   const id = r.key.replace(/\s+/g,'-');
   const skel   = document.getElementById(`skel-${id}`);
@@ -825,7 +822,12 @@ function fillOverviewCard(r) {
   canvas.style.display = 'block';
 
   const ctx  = canvas.getContext('2d');
-  const vals = r.data.map(d => parseFloat(d[metricKey]) || 0);
+  
+  const vals = r.data.map(d => {
+    const v = parseFloat(d[metricKey]);
+    return isNaN(v) ? null : v;
+  });
+  
   const lbls = r.data.map(d => d['Date'] || d['date'] || '');
 
   const grad = ctx.createLinearGradient(0, 0, 0, 130);
@@ -836,8 +838,16 @@ function fillOverviewCard(r) {
     type: 'line',
     data: {
       labels: lbls,
-      datasets: [{ data: vals, borderColor: r.color, backgroundColor: grad,
-        borderWidth: 1.5, pointRadius: 0, tension: 0.4, fill: true }]
+      datasets: [{ 
+        data: vals, 
+        borderColor: r.color, 
+        backgroundColor: grad,
+        borderWidth: 1.5, 
+        pointRadius: 2, 
+        spanGaps: true, 
+        tension: 0.4, 
+        fill: true 
+      }]
     },
     options: {
       responsive: true, maintainAspectRatio: false, animation: { duration: 350 },
@@ -863,6 +873,10 @@ function markCardError(key) {
 /* ── Dept page ── */
 async function loadDepartment(sheet) {
   setLoading(true);
+  
+  // FIXED: Show the raw data table again when viewing a department
+  document.getElementById('raw-data-section').style.display = 'block';
+
   try {
     const data = await fetchSheet(sheet);
     setLoading(false);
@@ -874,45 +888,6 @@ async function loadDepartment(sheet) {
     setLoading(false);
     showError();
   }
-}
-
-/* ── Debug panel ── */
-function showDebugPanel(results) {
-  const old = document.getElementById('debug-panel');
-  if (old) old.remove();
-
-  const panel = document.createElement('div');
-  panel.id = 'debug-panel';
-  panel.style.cssText = `background:#0d1320;border:1px solid rgba(249,115,22,0.25);border-radius:10px;padding:12px 16px;margin-bottom:20px;font-size:10px;font-family:'DM Mono',monospace;`;
-
-  const toggle = document.createElement('div');
-  toggle.style.cssText = `display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;`;
-  toggle.innerHTML = `<span style="color:#f97316;font-weight:600;letter-spacing:0.1em">⚙ API DEBUG — click to expand</span><span id="debug-chevron" style="color:#64748b">▼</span>`;
-
-  const body = document.createElement('div');
-  body.style.cssText = `display:none;margin-top:12px;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px;`;
-
-  results.forEach(r => {
-    const cols = r.data.length ? Object.keys(r.data[0]).join(', ') : '—';
-    const firstM = r.data.length ? (Object.keys(r.data[0]).find(k => isMetricCol(k, r.data[0][k])) || '—') : '—';
-    const div = document.createElement('div');
-    div.style.cssText = `background:#121929;border-radius:8px;padding:10px;border:1px solid rgba(255,255,255,0.05)`;
-    div.innerHTML = `<div style="color:${r.color};font-weight:600;margin-bottom:5px">${r.label} · ${r.data.length} rows</div>
-      <div style="color:#64748b;margin-bottom:3px">key metric: <span style="color:#e2e8f0">${firstM}</span></div>
-      <div style="color:#64748b;word-break:break-all">cols: <span style="color:#94a3b8">${cols}</span></div>`;
-    body.appendChild(div);
-  });
-
-  let open = false;
-  toggle.addEventListener('click', () => {
-    open = !open;
-    body.style.display = open ? 'grid' : 'none';
-    document.getElementById('debug-chevron').textContent = open ? '▲' : '▼';
-  });
-
-  panel.appendChild(toggle);
-  panel.appendChild(body);
-  document.getElementById('kpis').parentNode.insertBefore(panel, document.getElementById('kpis'));
 }
 
 function applyFilter() { loadPage(currentSheet); }
@@ -976,17 +951,35 @@ function renderDeptCharts(data, sheetName) {
   requestAnimationFrame(() => {
     const ctx = document.getElementById('dept-line').getContext('2d');
     const labels = data.map(d => d['Date'] || d['date'] || '');
-    const values = data.map(d => parseFloat(d[firstKey]) || 0);
+    
+    const values = data.map(d => {
+      const v = parseFloat(d[firstKey]);
+      return isNaN(v) ? null : v;
+    });
+
     const grad = ctx.createLinearGradient(0, 0, 0, 200);
     grad.addColorStop(0, 'rgba(249,115,22,0.3)');
     grad.addColorStop(1, 'rgba(249,115,22,0)');
 
     const c1 = new Chart(ctx, {
       type: 'line',
-      data: { labels, datasets: [{ label: firstKey, data: values,
-        borderColor:'#f97316', backgroundColor:grad, borderWidth:2,
-        pointRadius: data.length>30?0:3, pointBackgroundColor:'#f97316',
-        pointBorderColor:'#080c14', pointBorderWidth:2, tension:0.4, fill:true }] },
+      data: { 
+        labels, 
+        datasets: [{ 
+          label: firstKey, 
+          data: values,
+          borderColor:'#f97316', 
+          backgroundColor:grad, 
+          borderWidth:2,
+          pointRadius: values.filter(v=>v!==null).length <= 1 ? 3 : (data.length>30?0:3), 
+          pointBackgroundColor:'#f97316',
+          pointBorderColor:'#080c14', 
+          pointBorderWidth:2, 
+          spanGaps: true, 
+          tension:0.4, 
+          fill:true 
+        }] 
+      },
       options: {
         responsive:true, maintainAspectRatio:false,
         plugins:{ legend:{display:false}, tooltip:{backgroundColor:'#0d1320',borderColor:'rgba(255,255,255,0.08)',borderWidth:1,titleColor:'#f97316',bodyColor:'#e2e8f0',padding:10} },
