@@ -1,96 +1,202 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Company Dashboard</title>
+  <title>OPS Dashboard</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
   <style>
     body {
+      margin: 0;
       font-family: Inter;
+      display: flex;
       background: #0f172a;
       color: white;
+    }
+
+    /* Sidebar */
+    .sidebar {
+      width: 220px;
+      background: #1e293b;
+      height: 100vh;
       padding: 20px;
     }
 
-    h2 {
-      margin-bottom: 10px;
+    .sidebar h2 {
+      color: #f97316;
     }
 
-    select {
+    .menu {
+      margin-top: 30px;
+    }
+
+    .menu div {
+      padding: 10px;
+      cursor: pointer;
+      border-radius: 8px;
+      margin-bottom: 5px;
+    }
+
+    .menu div:hover {
+      background: #334155;
+    }
+
+    .active {
+      background: #f97316;
+    }
+
+    /* Main */
+    .main {
+      flex: 1;
+      padding: 20px;
+    }
+
+    .filters {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    input {
+      padding: 8px;
+      border-radius: 6px;
+    }
+
+    button {
+      background: #f97316;
+      border: none;
       padding: 10px;
       border-radius: 8px;
-      margin-bottom: 20px;
+      color: white;
+      cursor: pointer;
     }
 
     .grid {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
-      gap: 15px;
+      gap: 10px;
       margin-bottom: 20px;
     }
 
     .card {
       background: #1e293b;
       padding: 15px;
-      border-radius: 12px;
+      border-radius: 10px;
       text-align: center;
     }
 
     canvas {
       background: #1e293b;
-      border-radius: 12px;
-      padding: 20px;
+      padding: 15px;
+      border-radius: 10px;
+      margin-bottom: 20px;
     }
+
+    table {
+      width: 100%;
+      background: #1e293b;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    th, td {
+      padding: 10px;
+      border-bottom: 1px solid #334155;
+    }
+
   </style>
 </head>
 
 <body>
 
-<h2>📊 Company Dashboard</h2>
+<!-- Sidebar -->
+<div class="sidebar">
+  <h2>OPS Dashboard</h2>
 
-<select id="sheetSelect"></select>
+  <div class="menu">
+    <div onclick="loadPage('main')" class="active">Main Dashboard</div>
+    <div onclick="loadPage('Daily Dashboard')">Sales</div>
+    <div onclick="loadPage('Marketing Metrics')">Marketing</div>
+    <div onclick="loadPage('Product Metrics')">Product</div>
+    <div onclick="loadPage('Finance')">Finance</div>
+    <div onclick="loadPage('Supply Chain')">Supply Chain</div>
+    <div onclick="loadPage('HR')">HR</div>
+  </div>
+</div>
 
-<div class="grid" id="kpis"></div>
+<!-- Main Content -->
+<div class="main">
 
-<canvas id="chart"></canvas>
+  <h2 id="title">Main Dashboard</h2>
+
+  <div class="filters">
+    <input type="date" id="start">
+    <input type="date" id="end">
+    <button onclick="applyFilter()">Apply</button>
+  </div>
+
+  <div class="grid" id="kpis"></div>
+
+  <canvas id="chart"></canvas>
+
+  <table id="table">
+    <thead></thead>
+    <tbody></tbody>
+  </table>
+
+</div>
 
 <script>
 
 const API = "https://script.google.com/macros/s/AKfycbxqM_jClfPETd7I7eDXXiCGQvs3RRzgBpQNUjh8mrh_wymG6DNabMOnQarSZxpODiVn/exec";
+let currentSheet = "main";
 let chart;
 
 
-// ✅ Load sheets
-async function loadSheets() {
-  const res = await fetch(`${API}?action=getSheets`);
-  const sheets = await res.json();
+// Load Page
+function loadPage(sheet) {
+  currentSheet = sheet;
+  document.getElementById("title").innerText = sheet;
 
-  const select = document.getElementById("sheetSelect");
-
-  sheets.forEach(s => {
-    const opt = document.createElement("option");
-    opt.value = s;
-    opt.textContent = s;
-    select.appendChild(opt);
-  });
-
-  loadData(select.value);
+  if (sheet === "main") {
+    loadMainDashboard();
+  } else {
+    loadDepartment(sheet);
+  }
 }
 
 
-// ✅ Load data
-async function loadData(sheet) {
+// Main Dashboard (ALL DATA)
+async function loadMainDashboard() {
+  const sheets = ["Daily Dashboard","Marketing Metrics","Finance"];
+
+  let combined = [];
+
+  for (let s of sheets) {
+    const res = await fetch(`${API}?action=getData&sheet=${s}`);
+    const data = await res.json();
+    combined = combined.concat(data);
+  }
+
+  renderAll(combined);
+}
+
+
+// Department Data
+async function loadDepartment(sheet) {
   const res = await fetch(`${API}?action=getData&sheet=${sheet}`);
   const data = await res.json();
 
-  if (!data.length) return;
-
-  renderKPIs(data);
-  renderChart(sheet, data);
+  renderAll(data);
 }
 
 
-// ✅ KPI LOGIC (SMART 🔥)
+// Filter
+function applyFilter() {
+  loadPage(currentSheet);
+}
+
+
+// KPI
 function renderKPIs(data) {
   const container = document.getElementById("kpis");
   container.innerHTML = "";
@@ -98,33 +204,30 @@ function renderKPIs(data) {
   const keys = Object.keys(data[0]);
 
   keys.forEach(k => {
-    const values = data.map(d => parseFloat(d[k])).filter(v => !isNaN(v));
+    const nums = data.map(d => parseFloat(d[k])).filter(v => !isNaN(v));
 
-    if (values.length > 0) {
-      const sum = values.reduce((a,b) => a+b,0);
+    if (nums.length) {
+      const sum = nums.reduce((a,b)=>a+b,0);
 
-      const card = `
+      container.innerHTML += `
         <div class="card">
           <h4>${k}</h4>
           <h2>${sum}</h2>
         </div>
       `;
-
-      container.innerHTML += card;
     }
   });
 }
 
 
-// ✅ CHART LOGIC (AUTO DETECT)
-function renderChart(sheet, data) {
+// Chart
+function renderChart(data) {
   const ctx = document.getElementById("chart");
 
-  const keys = Object.keys(data[0]);
-  const numericKey = keys.find(k => !isNaN(parseFloat(data[0][k])));
+  const key = Object.keys(data[0]).find(k => !isNaN(parseFloat(data[0][k])));
 
-  const labels = data.map(d => d["Date"] || "");
-  const values = data.map(d => parseFloat(d[numericKey]) || 0);
+  const labels = data.map(d => d["Date"]);
+  const values = data.map(d => parseFloat(d[key]) || 0);
 
   if (chart) chart.destroy();
 
@@ -133,23 +236,44 @@ function renderChart(sheet, data) {
     data: {
       labels,
       datasets: [{
-        label: numericKey,
-        data: values,
-        tension: 0.3
+        label: key,
+        data: values
       }]
     }
   });
 }
 
 
-// change event
-document.getElementById("sheetSelect")
-  .addEventListener("change", (e) => {
-    loadData(e.target.value);
+// Table
+function renderTable(data) {
+  const thead = document.querySelector("#table thead");
+  const tbody = document.querySelector("#table tbody");
+
+  thead.innerHTML = "";
+  tbody.innerHTML = "";
+
+  const headers = Object.keys(data[0]);
+
+  thead.innerHTML = "<tr>" + headers.map(h => `<th>${h}</th>`).join("") + "</tr>";
+
+  data.forEach(row => {
+    tbody.innerHTML += "<tr>" + headers.map(h => `<td>${row[h]}</td>`).join("") + "</tr>";
   });
+}
 
 
-loadSheets();
+// Render all
+function renderAll(data) {
+  if (!data.length) return;
+
+  renderKPIs(data);
+  renderChart(data);
+  renderTable(data);
+}
+
+
+// Init
+loadMainDashboard();
 
 </script>
 
