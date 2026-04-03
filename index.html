@@ -6,19 +6,20 @@
   <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
 
   <style>
+    /* ✅ 1. LIGHT THEME COLORS */
     :root {
-      --bg: #080c14;
-      --surface: #0d1320;
-      --surface2: #121929;
-      --border: rgba(255,255,255,0.06);
+      --bg: #f8fafc;        /* Light grey background */
+      --surface: #ffffff;   /* White cards */
+      --surface2: #f1f5f9;  /* Slightly off-white for headers */
+      --border: rgba(0,0,0,0.08); /* Dark border for visibility */
       --accent: #f97316;
       --accent2: #fb923c;
       --accent-glow: rgba(249,115,22,0.18);
-      --text: #e2e8f0;
-      --muted: #64748b;
-      --success: #34d399;
-      --danger: #f87171;
-      --info: #60a5fa;
+      --text: #0f172a;      /* Dark text */
+      --muted: #64748b;     /* Grey text */
+      --success: #10b981;
+      --danger: #ef4444;
+      --info: #3b82f6;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -38,8 +39,8 @@
       position: fixed;
       inset: 0;
       background: 
-        radial-gradient(ellipse 60% 40% at 80% 20%, rgba(249,115,22,0.06) 0%, transparent 60%),
-        radial-gradient(ellipse 40% 60% at 10% 80%, rgba(96,165,250,0.04) 0%, transparent 50%);
+        radial-gradient(ellipse 60% 40% at 80% 20%, rgba(249,115,22,0.04) 0%, transparent 60%),
+        radial-gradient(ellipse 40% 60% at 10% 80%, rgba(96,165,250,0.03) 0%, transparent 50%);
       pointer-events: none;
       z-index: 0;
     }
@@ -57,12 +58,12 @@
       z-index: 10;
     }
     .custom-logo {
-      width: 140px; /* Change this number to make it bigger/smaller */
+      width: 140px; 
       height: auto; 
       max-height: 50px;
       object-fit: contain;
       display: block;
-      margin-left: 10px; /* Pushes it slightly right so it's not touching the edge */
+      margin-left: 10px; 
     }
 
     .logo-wrap {
@@ -72,33 +73,6 @@
       padding: 0 8px 28px;
       border-bottom: 1px solid var(--border);
       margin-bottom: 24px;
-    }
-
-    .logo-icon {
-      width: 32px;
-      height: 32px;
-      background: var(--accent);
-      border-radius: 8px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-family: 'Syne', sans-serif;
-      font-weight: 800;
-      font-size: 14px;
-      color: white;
-      flex-shrink: 0;
-    }
-
-    .logo-text {
-      font-family: 'Syne', sans-serif;
-      font-weight: 700;
-      font-size: 15px;
-      letter-spacing: 0.08em;
-      color: var(--text);
-    }
-
-    .logo-text span {
-      color: var(--accent);
     }
 
     .menu-label {
@@ -132,7 +106,7 @@
     }
 
     .menu-item:hover {
-      background: rgba(255,255,255,0.04);
+      background: rgba(0,0,0,0.04); /* Adjusted for light theme */
       color: var(--text);
     }
 
@@ -217,8 +191,8 @@
       align-items: center;
       gap: 6px;
       padding: 5px 10px;
-      background: rgba(52,211,153,0.1);
-      border: 1px solid rgba(52,211,153,0.2);
+      background: rgba(16,185,129,0.1);
+      border: 1px solid rgba(16,185,129,0.2);
       border-radius: 20px;
       font-size: 10px;
       color: var(--success);
@@ -274,7 +248,6 @@
       outline: none;
       padding: 0;
       height: 100%;
-      color-scheme: dark;
     }
 
     .filter-sep {
@@ -308,11 +281,11 @@
 
     .btn:active { transform: translateY(0); }
 
-    /* ── KPI CARDS ── */
+    /* ── KPI CARDS / SLOTS ── */
     .grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-      gap: 12px;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); /* Made slightly wider for slots */
+      gap: 16px;
       margin-bottom: 24px;
     }
 
@@ -320,7 +293,7 @@
       background: var(--surface);
       border: 1px solid var(--border);
       border-radius: 12px;
-      padding: 18px 16px;
+      padding: 20px 16px;
       position: relative;
       overflow: hidden;
       transition: transform 0.18s, box-shadow 0.18s;
@@ -329,33 +302,22 @@
 
     .card:hover {
       transform: translateY(-2px);
-      box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.06); /* Lighter shadow for light theme */
     }
-
-    .card::after {
-      content: '';
-      position: absolute;
-      top: 0; left: 0; right: 0;
-      height: 2px;
-      background: var(--accent);
-      opacity: 0;
-      transition: opacity 0.2s;
-    }
-
-    .card:hover::after { opacity: 1; }
 
     .card-label {
-      font-size: 10px;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      color: var(--muted);
-      margin-bottom: 10px;
+      font-family: 'Syne', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      color: var(--text);
+      margin-bottom: 12px;
     }
 
     .card-value {
-      font-family: 'Syne', sans-serif;
-      font-weight: 700;
-      font-size: 24px;
+      font-family: 'DM Mono', monospace;
+      font-weight: 500;
+      font-size: 32px;
       color: var(--text);
       line-height: 1;
     }
@@ -363,15 +325,17 @@
     .card-change {
       margin-top: 8px;
       font-size: 10px;
-      color: var(--success);
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
     }
 
     .card-bg {
       position: absolute;
       right: -10px;
       bottom: -10px;
-      font-size: 52px;
-      opacity: 0.04;
+      font-size: 60px;
+      opacity: 0.03;
       line-height: 1;
       pointer-events: none;
     }
@@ -463,8 +427,8 @@
       overflow-y: auto;
     }
 
-    .table-wrap::-webkit-scrollbar { width: 3px; height: 3px; }
-    .table-wrap::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+    .table-wrap::-webkit-scrollbar { width: 4px; height: 4px; }
+    .table-wrap::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 2px; }
 
     table {
       width: 100%;
@@ -501,7 +465,7 @@
     tbody tr:last-child td { border-bottom: none; }
 
     tbody tr:hover td {
-      background: rgba(255,255,255,0.02);
+      background: rgba(0,0,0,0.02); /* Light theme hover */
     }
 
     /* Loading / Empty States */
@@ -529,7 +493,7 @@
     .loading-overlay {
       position: fixed;
       inset: 0;
-      background: rgba(8,12,20,0.8);
+      background: rgba(255,255,255,0.8); /* Light theme overlay */
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -564,7 +528,7 @@
 
 <div class="sidebar">
   <div class="logo-wrap">
-    <img src="./Log.png" alt="Company Logo" class="custom-logo">
+    <img src="./LOGO.avif" alt="Company Logo" class="custom-logo">
   </div>
 
   <div class="menu-label">Navigation</div>
@@ -650,14 +614,14 @@
 const API = "https://script.google.com/macros/s/AKfycbxqM_jClfPETd7I7eDXXiCGQvs3RRzgBpQNUjh8mrh_wymG6DNabMOnQarSZxpODiVn/exec";
 
 const OVERVIEW_SHEETS = [
-  { key: "Sales",        label: "Sales",        color: "#f97316" },
-  { key: "Marketing",    label: "Marketing",    color: "#60a5fa" },
-  { key: "Accounts",     label: "Accounts",     color: "#ec4899" },
-  { key: "Finance",      label: "Finance",      color: "#34d399" },
-  { key: "Product",      label: "Product",      color: "#a78bfa" },
-  { key: "Supply Chain", label: "Supply Chain", color: "#fb923c" },
-  { key: "HR",           label: "HR",           color: "#f87171" },
-  { key: "CSAT",         label: "CSAT",         color: "#facc15" },
+  { key: "Sales",        label: "Sales",        color: "#f97316", icon: "◈" },
+  { key: "Marketing",    label: "Marketing",    color: "#60a5fa", icon: "◉" },
+  { key: "Accounts",     label: "Accounts",     color: "#ec4899", icon: "◇" },
+  { key: "Finance",      label: "Finance",      color: "#34d399", icon: "◆" },
+  { key: "Product",      label: "Product",      color: "#a78bfa", icon: "▲" },
+  { key: "Supply Chain", label: "Supply Chain", color: "#fb923c", icon: "●" },
+  { key: "HR",           label: "HR",           color: "#f87171", icon: "■" },
+  { key: "CSAT",         label: "CSAT",         color: "#facc15", icon: "▶" },
 ];
 
 const SKIP_COLS = new Set(['date','day','week','month','year','period','name','label','category','type','id','source','channel','region','department','team']);
@@ -665,8 +629,9 @@ const SKIP_COLS = new Set(['date','day','week','month','year','period','name','l
 let currentSheet = "main";
 let activeCharts = [];
 
+// Chart Defaults updated for Light Theme
 Chart.defaults.color = '#64748b';
-Chart.defaults.borderColor = 'rgba(255,255,255,0.04)';
+Chart.defaults.borderColor = 'rgba(0,0,0,0.05)';
 Chart.defaults.font.family = "'DM Mono', monospace";
 Chart.defaults.font.size = 10;
 
@@ -710,7 +675,7 @@ async function fetchSheet(sheetName) {
   
   const contentType = res.headers.get("content-type");
   if (!contentType || !contentType.includes("application/json")) {
-    throw new Error("Server did not return JSON. The script may have crashed.");
+    throw new Error("Server did not return JSON.");
   }
 
   const raw = await res.json();
@@ -749,11 +714,12 @@ async function loadPage(sheet) {
 async function loadMainDashboard() {
   setLoading(false); 
   
-  // FIXED: Hide the raw data table on the overview page
+  // Hide raw data table on overview page
   document.getElementById('raw-data-section').style.display = 'none';
 
+  // ✅ 2 & 3. Build Number Slots for Overview
   buildOverviewSkeletons();
-  document.getElementById('kpis').innerHTML = '<div class="state-msg"><div class="spinner"></div></div>';
+  document.getElementById('kpis').innerHTML = ''; // Hide KPI bar on overview
 
   const allResults = [];
 
@@ -762,140 +728,102 @@ async function loadMainDashboard() {
       .then(data => {
         const r = { ...s, data };
         allResults.push(r);
-        fillOverviewCard(r);                                       
-        renderKPIs(allResults.flatMap(x => x.data));               
+        fillOverviewCard(r); // Now populates numbers, not graphs!                                       
       })
       .catch(() => {
-        allResults.push({ ...s, data: [] });
         markCardError(s.key);
       })
   );
 
   await Promise.all(promises);
-  // FIXED: Removed renderTable call from here
 }
 
-/* ── Build Skeletons ── */
+/* ── ✅ 3. Build Skeletons (Now renders number slots instead of chart canvas) ── */
 function buildOverviewSkeletons() {
-  if (!document.getElementById('shimmer-style')) {
-    const s = document.createElement('style');
-    s.id = 'shimmer-style';
-    s.textContent = `@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}`;
-    document.head.appendChild(s);
-  }
-
   const area = document.getElementById('charts-area');
   area.innerHTML = '';
   const grid = document.createElement('div');
   grid.id = 'overview-grid';
-  grid.style.cssText = `display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px;margin-bottom:24px;`;
+  grid.className = 'grid'; // Uses your existing beautiful card grid layout
   area.appendChild(grid);
 
   OVERVIEW_SHEETS.forEach(s => {
     const id = s.key.replace(/\s+/g,'-');
     const card = document.createElement('div');
-    card.className = 'chart-card';
+    card.className = 'card';
     card.id = `dept-card-${id}`;
-    card.style.minHeight = '170px';
+    
+    // Create the slot UI
     card.innerHTML = `
-      <div class="chart-header">
-        <div class="chart-title">${s.label}</div>
-        <div class="chart-tag" id="tag-${id}" style="background:${s.color}22;color:${s.color}">loading…</div>
+      <div class="card-label" style="color:${s.color}">${s.label}</div>
+      <div class="card-value" id="val-${id}">
+        <div class="spinner" style="width:16px;height:16px;border-width:2px;margin:0"></div>
       </div>
-      <div id="skel-${id}" style="height:120px;border-radius:6px;
-        background:linear-gradient(90deg,#121929 25%,#1e2d45 50%,#121929 75%);
-        background-size:200% 100%;animation:shimmer 1.4s infinite linear;"></div>
-      <canvas id="canvas-${id}" style="display:none;max-height:130px"></canvas>
+      <div class="card-change" id="metric-name-${id}">Loading...</div>
+      <div style="position:absolute;top:0;left:0;right:0;height:3px;background:${s.color}"></div>
+      <div class="card-bg">${s.icon}</div>
     `;
     grid.appendChild(card);
   });
 }
 
-/* ── Fill Overview Cards ── */
+/* ── ✅ 3. Fill Overview Cards (Just updates the numbers, no graphs!) ── */
 function fillOverviewCard(r) {
   const id = r.key.replace(/\s+/g,'-');
-  const skel   = document.getElementById(`skel-${id}`);
-  const canvas = document.getElementById(`canvas-${id}`);
-  const tag    = document.getElementById(`tag-${id}`);
-  if (!skel || !canvas) return;
+  const valEl = document.getElementById(`val-${id}`);
+  const nameEl = document.getElementById(`metric-name-${id}`);
+  
+  if (!valEl) return;
 
-  if (!r.data.length) {
-    skel.style.cssText = 'height:120px;display:flex;align-items:center;justify-content:center;color:#64748b;font-size:10px;animation:none;background:#121929;border-radius:6px;';
-    skel.textContent = 'No data';
-    tag.textContent = '—';
+  if (!r.data || !r.data.length) {
+    valEl.textContent = '—';
+    nameEl.textContent = 'No Data';
     return;
   }
 
+  // Find the primary metric for this department
   const metricKey = Object.keys(r.data[0]).find(k => isMetricCol(k, r.data[0][k]));
-  if (!metricKey) { skel.style.display='none'; tag.textContent='—'; return; }
+  if (!metricKey) { 
+    valEl.textContent = '—';
+    nameEl.textContent = 'No Metrics';
+    return; 
+  }
 
-  tag.textContent = metricKey;
-  skel.style.display = 'none';
-  canvas.style.display = 'block';
+  // Calculate sum of the metric
+  const nums = r.data.map(d => parseFloat(d[metricKey])).filter(v => !isNaN(v));
+  const sum = nums.reduce((a,b)=>a+b,0);
 
-  const ctx  = canvas.getContext('2d');
-  
-  const vals = r.data.map(d => {
-    const v = parseFloat(d[metricKey]);
-    return isNaN(v) ? null : v;
-  });
-  
-  const lbls = r.data.map(d => d['Date'] || d['date'] || '');
-
-  // Updated gradient for bars
-  const grad = ctx.createLinearGradient(0, 0, 0, 130);
-  grad.addColorStop(0, r.color + 'dd'); // Slightly more solid top
-  grad.addColorStop(1, r.color + '33'); // Transparent bottom
-
-  const c = new Chart(ctx, {
-    type: 'bar', // Changed to Bar Graph
-    data: {
-      labels: lbls,
-      datasets: [{ 
-        data: vals, 
-        backgroundColor: grad,
-        borderColor: r.color, 
-        borderWidth: 1,
-        borderRadius: 4, // Adds rounded tops to the bars
-        borderSkipped: false
-      }]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false, animation: { duration: 350 },
-      plugins: { legend: { display: false }, tooltip: {
-        backgroundColor:'#0d1320', borderColor:'rgba(255,255,255,0.08)',
-        borderWidth:1, titleColor:r.color, bodyColor:'#e2e8f0', padding:8
-      }},
-      scales: {
-        x: { display: false },
-        y: { 
-          beginAtZero: true, // Forces bars to start from the baseline
-          ticks: { color:'#64748b', font:{size:9}, maxTicksLimit:4 }, 
-          grid: { color:'rgba(255,255,255,0.03)' } 
-        }
-      }
-    }
-  });
-  activeCharts.push(c);
+  // Update UI with the number
+  valEl.textContent = fmtNum(sum);
+  nameEl.textContent = metricKey; // Shows which metric is being displayed below the number
 }
 
 function markCardError(key) {
   const id = key.replace(/\s+/g,'-');
-  const sk = document.getElementById(`skel-${id}`);
-  if (sk) { sk.style.cssText='height:120px;display:flex;align-items:center;justify-content:center;color:#f87171;font-size:10px;animation:none;background:#121929;border-radius:6px;'; sk.textContent='Failed to load'; }
+  const valEl = document.getElementById(`val-${id}`);
+  const nameEl = document.getElementById(`metric-name-${id}`);
+  if (valEl) { 
+    valEl.textContent = 'Error';
+    valEl.style.fontSize = '18px';
+    valEl.style.color = 'var(--danger)';
+    nameEl.textContent = 'Failed to load';
+  }
 }
 
 /* ── Dept page ── */
 async function loadDepartment(sheet) {
   setLoading(true);
   
-  // FIXED: Show the raw data table again when viewing a department
+  // Show raw data table and charts area when viewing a specific department
   document.getElementById('raw-data-section').style.display = 'block';
+  document.getElementById('charts-area').innerHTML = ''; // Clear overview slots
 
   try {
     const data = await fetchSheet(sheet);
     setLoading(false);
     if (!data.length) { showError(); return; }
+    
+    // Render everything specifically for the department
     renderKPIs(data);
     renderDeptCharts(data, sheet);
     renderTable(data);
@@ -908,7 +836,7 @@ async function loadDepartment(sheet) {
 function applyFilter() { loadPage(currentSheet); }
 function showError() { document.getElementById('kpis').innerHTML = `<div class="state-msg">⚠ Could not load data</div>`; }
 
-/* ── KPI cards ── */
+/* ── KPI cards (Visible only on Department views) ── */
 function renderKPIs(data) {
   const container = document.getElementById("kpis");
   container.innerHTML = "";
@@ -935,7 +863,7 @@ function renderKPIs(data) {
   if (!idx) container.innerHTML = `<div class="state-msg">No numeric metrics found</div>`;
 }
 
-/* ── Dept charts: line + doughnut ── */
+/* ── Dept charts: line/bar + doughnut (Visible only on Department views) ── */
 function renderDeptCharts(data, sheetName) {
   const area = document.getElementById('charts-area');
   area.innerHTML = `
@@ -962,7 +890,11 @@ function renderDeptCharts(data, sheetName) {
   if (!firstKey) return;
 
   document.getElementById('dept-metric-tag').textContent = firstKey;
+  
+  // Get the color for the current department
+  const deptColor = OVERVIEW_SHEETS.find(d => d.key === sheetName)?.color || '#f97316';
 
+  // MAIN CHART (Keeping your Bar Chart logic!)
   requestAnimationFrame(() => {
     const ctx = document.getElementById('dept-line').getContext('2d');
     const labels = data.map(d => d['Date'] || d['date'] || '');
@@ -973,40 +905,36 @@ function renderDeptCharts(data, sheetName) {
     });
 
     const grad = ctx.createLinearGradient(0, 0, 0, 200);
-    grad.addColorStop(0, 'rgba(249,115,22,0.3)');
-    grad.addColorStop(1, 'rgba(249,115,22,0)');
+    grad.addColorStop(0, deptColor + 'dd');
+    grad.addColorStop(1, deptColor + '33');
 
     const c1 = new Chart(ctx, {
-      type: 'line',
+      type: 'bar', // Kept your bar chart!
       data: { 
         labels, 
         datasets: [{ 
           label: firstKey, 
           data: values,
-          borderColor:'#f97316', 
-          backgroundColor:grad, 
-          borderWidth:2,
-          pointRadius: values.filter(v=>v!==null).length <= 1 ? 3 : (data.length>30?0:3), 
-          pointBackgroundColor:'#f97316',
-          pointBorderColor:'#080c14', 
-          pointBorderWidth:2, 
-          spanGaps: true, 
-          tension:0.4, 
-          fill:true 
+          borderColor: deptColor, 
+          backgroundColor: grad, 
+          borderWidth: 1,
+          borderRadius: 4,
+          borderSkipped: false
         }] 
       },
       options: {
         responsive:true, maintainAspectRatio:false,
-        plugins:{ legend:{display:false}, tooltip:{backgroundColor:'#0d1320',borderColor:'rgba(255,255,255,0.08)',borderWidth:1,titleColor:'#f97316',bodyColor:'#e2e8f0',padding:10} },
+        plugins:{ legend:{display:false}, tooltip:{backgroundColor:'#ffffff',borderColor:'rgba(0,0,0,0.1)',borderWidth:1,titleColor:deptColor,bodyColor:'#0f172a',padding:10} },
         scales:{
-          x:{ ticks:{maxTicksLimit:8,color:'#64748b',font:{size:9}}, grid:{color:'rgba(255,255,255,0.03)'} },
-          y:{ ticks:{color:'#64748b',font:{size:9}}, grid:{color:'rgba(255,255,255,0.03)'} }
+          x:{ ticks:{maxTicksLimit:8,color:'#64748b',font:{size:9}}, grid:{color:'rgba(0,0,0,0.03)'} },
+          y:{ beginAtZero: true, ticks:{color:'#64748b',font:{size:9}}, grid:{color:'rgba(0,0,0,0.03)'} }
         }
       }
     });
     activeCharts.push(c1);
   });
 
+  // DONUT CHART
   requestAnimationFrame(() => {
     const ctx2 = document.getElementById('dept-donut').getContext('2d');
     const topKeys = metricKeys.slice(0, 6);
@@ -1016,12 +944,12 @@ function renderDeptCharts(data, sheetName) {
     const c2 = new Chart(ctx2, {
       type: 'doughnut',
       data: { labels: topKeys, datasets:[{ data:sums,
-        backgroundColor:colors.map(c=>c+'99'), borderColor:colors, borderWidth:2, hoverOffset:4 }] },
+        backgroundColor:colors.map(c=>c+'dd'), borderColor:colors, borderWidth:2, hoverOffset:4 }] },
       options: {
         responsive:true,
         plugins:{
           legend:{position:'bottom',labels:{color:'#64748b',font:{size:9},padding:8,boxWidth:10}},
-          tooltip:{backgroundColor:'#0d1320',borderColor:'rgba(255,255,255,0.08)',borderWidth:1,titleColor:'#f97316',bodyColor:'#e2e8f0',padding:10}
+          tooltip:{backgroundColor:'#ffffff',borderColor:'rgba(0,0,0,0.1)',borderWidth:1,titleColor:deptColor,bodyColor:'#0f172a',padding:10}
         },
         cutout:'65%'
       }
