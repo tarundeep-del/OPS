@@ -281,7 +281,7 @@
 
     .btn:active { transform: translateY(0); }
 
-    /* ── DEPARTMENT SECTIONS (NEW OVERVIEW LAYOUT) ── */
+    /* ── DEPARTMENT SECTIONS (OVERVIEW LAYOUT) ── */
     .dept-section {
       margin-bottom: 32px;
     }
@@ -637,15 +637,15 @@
 <script>
 const API = "https://script.google.com/macros/s/AKfycbxqM_jClfPETd7I7eDXXiCGQvs3RRzgBpQNUjh8mrh_wymG6DNabMOnQarSZxpODiVn/exec";
 
-// ✅ OVERVIEW METRICS CONFIGURATION - 2 Separate Cards Per Department
+// ✅ OVERVIEW METRICS CONFIGURATION - Uses logic: 'sum', 'avg', 'latest'
 const OVERVIEW_SHEETS = [
   { key: "Sales",        label: "Sales",        color: "#f97316", icon: "◈", metrics: [{col: "Leads", type: "sum"}, {col: "Enrollments", type: "sum"}] },
   { key: "Marketing",    label: "Marketing",    color: "#60a5fa", icon: "◉", metrics: [{col: "ROAS", type: "avg"}, {col: "Cost", type: "sum"}] },
   { key: "Product",      label: "Product",      color: "#a78bfa", icon: "▲", metrics: [{col: "Live session", type: "sum"}, {col: "NPS", type: "avg"}] },
-  { key: "Finance",      label: "Finance",      color: "#34d399", icon: "◆", metrics: [{col: "Total collection of month", type: "sum"}, {col: "Total collection of Day", type: "sum"}] },
+  { key: "Finance",      label: "Finance",      color: "#34d399", icon: "◆", metrics: [{col: "Total collection of month", type: "sum"}, {col: "Total collection of Day", type: "latest"}] },
   { key: "Accounts",     label: "Accounts",     color: "#ec4899", icon: "◇", metrics: [{col: "Receivables", type: "sum"}, {col: "Payables", type: "sum"}] }, 
-  { key: "Supply Chain", label: "Supply Chain", color: "#fb923c", icon: "●", metrics: [{col: "Orders Placed", type: "sum"}, {col: "Pending Orders", type: "sum"}] },
-  { key: "HR",           label: "HR",           color: "#f87171", icon: "■", metrics: [{col: "Interviews Scheduled", type: "sum"}, {col: "Total strength", type: "sum"}] },
+  { key: "Supply Chain", label: "Supply Chain", color: "#fb923c", icon: "●", metrics: [{col: "Orders Placed", type: "sum"}, {col: "Pending Orders", type: "latest"}] },
+  { key: "HR",           label: "HR",           color: "#f87171", icon: "■", metrics: [{col: "Interviews Scheduled", type: "sum"}, {col: "Total strength", type: "latest"}] },
   { key: "CSAT",         label: "CSAT",         color: "#facc15", icon: "▶", metrics: [{col: "Onboarding", type: "sum"}, {col: "Tickets resolved", type: "sum"}] },
 ];
 
@@ -658,6 +658,17 @@ Chart.defaults.color = '#64748b';
 Chart.defaults.borderColor = 'rgba(0,0,0,0.05)';
 Chart.defaults.font.family = "'DM Mono', monospace";
 Chart.defaults.font.size = 10;
+
+/* ── ✅ LOGIC HELPER: Finds out if a metric should be Avg, Latest, or Sum globally ── */
+function getMetricConfig(metricName) {
+  const name = metricName.toLowerCase().trim();
+  // Average
+  if (['campaign led gen', 'campaign lead gen', 'engagement ads', 'roas', 'active students', 'active student', 'nps', 'avg delivery tat', 'avg tat'].includes(name)) return 'avg';
+  // Latest (Date wise)
+  if (['total collection of the day', 'total collection of day', 'pending orders', 'kit costing(fd)', 'kit costing', 'open positions', 'total strength'].includes(name)) return 'latest';
+  // Default Sum
+  return 'sum';
+}
 
 /* ── Helpers ── */
 function setLoading(on) { document.getElementById('loader').classList.toggle('show', on); }
@@ -738,12 +749,10 @@ async function loadPage(sheet) {
 async function loadMainDashboard() {
   setLoading(false); 
   
-  // Hide raw data table on overview page
   document.getElementById('raw-data-section').style.display = 'none';
 
-  // Build Department Groups and Cards
   buildOverviewSkeletons();
-  document.getElementById('kpis').innerHTML = ''; // Hide generic KPI bar on overview
+  document.getElementById('kpis').innerHTML = '';
 
   const allResults = [];
 
@@ -762,7 +771,7 @@ async function loadMainDashboard() {
   await Promise.all(promises);
 }
 
-/* ── ✅ SKELETON: Creates Heading & 2 Cards per Department ── */
+/* ── SKELETON: Creates Heading & 2 Cards per Department ── */
 function buildOverviewSkeletons() {
   const area = document.getElementById('charts-area');
   area.innerHTML = '';
@@ -770,31 +779,29 @@ function buildOverviewSkeletons() {
   OVERVIEW_SHEETS.forEach(s => {
     const id = s.key.replace(/\s+/g,'-');
     
-    // Create Department Section container
     const section = document.createElement('div');
     section.className = 'dept-section';
 
-    // Create Department Heading
     const heading = document.createElement('div');
     heading.className = 'dept-heading';
     heading.style.color = s.color;
     heading.innerHTML = `<span>${s.icon}</span> ${s.label}`;
     section.appendChild(heading);
 
-    // Create Grid for the 2 cards
     const grid = document.createElement('div');
     grid.className = 'dept-cards-grid';
 
-    // Loop through the 2 metrics and create a card for each
     s.metrics.forEach((m, index) => {
       const card = document.createElement('div');
       card.className = 'card';
       card.id = `dept-card-${id}-${index}`;
       
+      const typeLabel = m.type === 'avg' ? '(Avg)' : (m.type === 'latest' ? '(Latest)' : '(Total)');
+
       card.innerHTML = `
         <div class="card-label" style="color:${s.color}">${s.label}</div>
         <div style="font-size: 10px; color: var(--muted); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600;">
-          ${m.col} ${m.type === 'avg' ? '(Avg)' : '(Total)'}
+          ${m.col} ${typeLabel}
         </div>
         <div class="card-value" id="val-${id}-${index}">
           <div class="spinner" style="width:20px;height:20px;border-width:2px;margin:0"></div>
@@ -811,7 +818,7 @@ function buildOverviewSkeletons() {
   });
 }
 
-/* ── ✅ DATA FILLER: Fills the metric cards inside the department sections ── */
+/* ── DATA FILLER: Fills the metric cards inside the overview ── */
 function fillOverviewCards(r) {
   const id = r.key.replace(/\s+/g,'-');
   
@@ -832,10 +839,19 @@ function fillOverviewCards(r) {
 
     const mHeader = getHeaderName(mConfig.col);
     if (mHeader) {
-      let nums = r.data.map(d => parseFloat(d[mHeader])).filter(v => !isNaN(v));
+      // Sort to reliably get latest item at the end
+      const sortedData = [...r.data].sort((a,b) => new Date(a['Date'] || a['date']) - new Date(b['Date'] || b['date']));
+      let nums = sortedData.map(d => parseFloat(d[mHeader])).filter(v => !isNaN(v));
+      
       if (nums.length) {
-         let total = nums.reduce((a,b) => a+b, 0);
-         let finalVal = mConfig.type === 'avg' ? (total / nums.length) : total;
+         let finalVal = 0;
+         if (mConfig.type === 'avg') {
+           finalVal = nums.reduce((a,b) => a+b, 0) / nums.length;
+         } else if (mConfig.type === 'latest') {
+           finalVal = nums[nums.length - 1]; // Pulls exact latest day value
+         } else {
+           finalVal = nums.reduce((a,b) => a+b, 0); // Total sum
+         }
          valEl.textContent = fmtNum(finalVal);
       } else {
          valEl.textContent = '0';
@@ -862,7 +878,6 @@ function markCardError(key) {
 async function loadDepartment(sheet) {
   setLoading(true);
   
-  // Show raw data table and clear overview layout
   document.getElementById('raw-data-section').style.display = 'block';
   document.getElementById('charts-area').innerHTML = ''; 
 
@@ -883,7 +898,7 @@ async function loadDepartment(sheet) {
 function applyFilter() { loadPage(currentSheet); }
 function showError() { document.getElementById('kpis').innerHTML = `<div class="state-msg">⚠ Could not load data</div>`; }
 
-/* ── KPI cards (Visible only on Department views) ── */
+/* ── ✅ KPI cards (Department views): Smart calculation ── */
 function renderKPIs(data) {
   const container = document.getElementById("kpis");
   container.innerHTML = "";
@@ -892,15 +907,35 @@ function renderKPIs(data) {
   const keys = Object.keys(data[0]).filter(k => isMetricCol(k, data[0][k]));
   const emojis = ['◈','◉','◇','◆','▲','●','■','▶'];
   let idx = 0;
+  
+  // Sort for reliable 'latest' metric extraction
+  const sortedData = [...data].sort((a,b) => new Date(a['Date'] || a['date']) - new Date(b['Date'] || b['date']));
 
   keys.forEach(k => {
-    const nums = data.map(d => parseFloat(d[k])).filter(v => !isNaN(v));
+    const nums = sortedData.map(d => parseFloat(d[k])).filter(v => !isNaN(v));
     if (!nums.length) return;
-    const sum = nums.reduce((a,b)=>a+b,0);
+
+    const aggType = getMetricConfig(k);
+    let finalVal = 0;
+    let typeLabel = "(TOTAL)";
+
+    if (aggType === 'avg') {
+      finalVal = nums.reduce((a,b)=>a+b,0) / nums.length;
+      typeLabel = "(AVG)";
+    } else if (aggType === 'latest') {
+      finalVal = nums[nums.length - 1];
+      typeLabel = "(LATEST)";
+    } else {
+      finalVal = nums.reduce((a,b)=>a+b,0);
+    }
+
     container.innerHTML += `
       <div class="card" style="animation-delay:${idx*0.04}s">
         <div class="card-label">${k}</div>
-        <div class="card-value">${fmtNum(sum)}</div>
+        <div style="font-size: 10px; color: var(--muted); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600;">
+          ${typeLabel}
+        </div>
+        <div class="card-value">${fmtNum(finalVal)}</div>
         <div class="card-change">↑ active</div>
         <div class="card-bg">${emojis[idx % emojis.length]}</div>
       </div>`;
@@ -910,7 +945,7 @@ function renderKPIs(data) {
   if (!idx) container.innerHTML = `<div class="state-msg">No numeric metrics found</div>`;
 }
 
-/* ── Dept charts: Bar + Doughnut (Visible only on Department views) ── */
+/* ── ✅ Dept charts: Smart Calculation for Donut ── */
 function renderDeptCharts(data, sheetName) {
   const area = document.getElementById('charts-area');
   area.innerHTML = `
@@ -939,13 +974,14 @@ function renderDeptCharts(data, sheetName) {
   document.getElementById('dept-metric-tag').textContent = firstKey;
   
   const deptColor = OVERVIEW_SHEETS.find(d => d.key === sheetName)?.color || '#f97316';
+  const sortedData = [...data].sort((a,b) => new Date(a['Date'] || a['date']) - new Date(b['Date'] || b['date']));
 
-  // MAIN CHART (Bar Chart)
+  // MAIN CHART (Bar Chart is inherently Date Wise so we just plot array)
   requestAnimationFrame(() => {
     const ctx = document.getElementById('dept-line').getContext('2d');
-    const labels = data.map(d => d['Date'] || d['date'] || '');
+    const labels = sortedData.map(d => d['Date'] || d['date'] || '');
     
-    const values = data.map(d => {
+    const values = sortedData.map(d => {
       const v = parseFloat(d[firstKey]);
       return isNaN(v) ? null : v;
     });
@@ -980,11 +1016,21 @@ function renderDeptCharts(data, sheetName) {
     activeCharts.push(c1);
   });
 
-  // DONUT CHART
+  // DONUT CHART (Respects sum/avg/latest logic)
   requestAnimationFrame(() => {
     const ctx2 = document.getElementById('dept-donut').getContext('2d');
     const topKeys = metricKeys.slice(0, 6);
-    const sums = topKeys.map(k => data.reduce((s,d)=>s+(parseFloat(d[k])||0),0));
+    
+    const sums = topKeys.map(k => {
+      const aggType = getMetricConfig(k);
+      const nums = sortedData.map(d => parseFloat(d[k])).filter(v => !isNaN(v));
+      if (!nums.length) return 0;
+      
+      if (aggType === 'avg') return nums.reduce((a,b)=>a+b,0) / nums.length;
+      if (aggType === 'latest') return nums[nums.length - 1];
+      return nums.reduce((a,b)=>a+b,0);
+    });
+
     const colors = ['#f97316','#fb923c','#60a5fa','#34d399','#a78bfa','#f87171'];
 
     const c2 = new Chart(ctx2, {
