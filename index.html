@@ -6,17 +6,17 @@
   <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
 
   <style>
-    /* ✅ 1. LIGHT THEME COLORS */
+    /* ✅ LIGHT THEME COLORS */
     :root {
-      --bg: #f8fafc;        /* Light grey background */
-      --surface: #ffffff;   /* White cards */
-      --surface2: #f1f5f9;  /* Slightly off-white for headers */
-      --border: rgba(0,0,0,0.08); /* Dark border for visibility */
+      --bg: #f8fafc;        
+      --surface: #ffffff;   
+      --surface2: #f1f5f9;  
+      --border: rgba(0,0,0,0.08); 
       --accent: #f97316;
       --accent2: #fb923c;
       --accent-glow: rgba(249,115,22,0.18);
-      --text: #0f172a;      /* Dark text */
-      --muted: #64748b;     /* Grey text */
+      --text: #0f172a;      
+      --muted: #64748b;     
       --success: #10b981;
       --danger: #ef4444;
       --info: #3b82f6;
@@ -106,7 +106,7 @@
     }
 
     .menu-item:hover {
-      background: rgba(0,0,0,0.04); /* Adjusted for light theme */
+      background: rgba(0,0,0,0.04); 
       color: var(--text);
     }
 
@@ -284,7 +284,7 @@
     /* ── KPI CARDS / SLOTS ── */
     .grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); /* Made slightly wider for slots */
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); 
       gap: 16px;
       margin-bottom: 24px;
     }
@@ -302,28 +302,27 @@
 
     .card:hover {
       transform: translateY(-2px);
-      box-shadow: 0 8px 24px rgba(0,0,0,0.06); /* Lighter shadow for light theme */
+      box-shadow: 0 8px 24px rgba(0,0,0,0.06); 
     }
 
     .card-label {
       font-family: 'Syne', sans-serif;
-      font-size: 13px;
-      font-weight: 600;
-      letter-spacing: 0.05em;
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
       color: var(--text);
-      margin-bottom: 12px;
+      margin-bottom: 4px;
     }
 
     .card-value {
       font-family: 'DM Mono', monospace;
       font-weight: 500;
-      font-size: 32px;
+      font-size: 22px; /* Adjusted size to fit two metrics perfectly */
       color: var(--text);
       line-height: 1;
     }
 
     .card-change {
-      margin-top: 8px;
       font-size: 10px;
       color: var(--muted);
       text-transform: uppercase;
@@ -333,8 +332,8 @@
     .card-bg {
       position: absolute;
       right: -10px;
-      bottom: -10px;
-      font-size: 60px;
+      bottom: -15px;
+      font-size: 70px;
       opacity: 0.03;
       line-height: 1;
       pointer-events: none;
@@ -465,7 +464,7 @@
     tbody tr:last-child td { border-bottom: none; }
 
     tbody tr:hover td {
-      background: rgba(0,0,0,0.02); /* Light theme hover */
+      background: rgba(0,0,0,0.02); 
     }
 
     /* Loading / Empty States */
@@ -493,7 +492,7 @@
     .loading-overlay {
       position: fixed;
       inset: 0;
-      background: rgba(255,255,255,0.8); /* Light theme overlay */
+      background: rgba(255,255,255,0.8); 
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -613,15 +612,16 @@
 <script>
 const API = "https://script.google.com/macros/s/AKfycbxqM_jClfPETd7I7eDXXiCGQvs3RRzgBpQNUjh8mrh_wymG6DNabMOnQarSZxpODiVn/exec";
 
+// ✅ OVERVIEW METRICS CONFIGURATION
+// Changed to support 2 exact metrics per card (Sum vs Avg)
 const OVERVIEW_SHEETS = [
-  { key: "Sales",        label: "Sales",        color: "#f97316", icon: "◈" },
-  { key: "Marketing",    label: "Marketing",    color: "#60a5fa", icon: "◉" },
-  { key: "Accounts",     label: "Accounts",     color: "#ec4899", icon: "◇" },
-  { key: "Finance",      label: "Finance",      color: "#34d399", icon: "◆" },
-  { key: "Product",      label: "Product",      color: "#a78bfa", icon: "▲" },
-  { key: "Supply Chain", label: "Supply Chain", color: "#fb923c", icon: "●" },
-  { key: "HR",           label: "HR",           color: "#f87171", icon: "■" },
-  { key: "CSAT",         label: "CSAT",         color: "#facc15", icon: "▶" },
+  { key: "Sales",        label: "Sales",        color: "#f97316", icon: "◈", metrics: [{col: "Leads", type: "sum"}, {col: "Enrollments", type: "sum"}] },
+  { key: "Marketing",    label: "Marketing",    color: "#60a5fa", icon: "◉", metrics: [{col: "ROAS", type: "avg"}, {col: "Cost", type: "sum"}] },
+  { key: "Product",      label: "Product",      color: "#a78bfa", icon: "▲", metrics: [{col: "Live session", type: "sum"}, {col: "NPS", type: "avg"}] },
+  { key: "Finance",      label: "Finance",      color: "#34d399", icon: "◆", metrics: [{col: "Total collection of month", type: "sum"}, {col: "Total collection of Day", type: "sum"}] },
+  { key: "Supply Chain", label: "Supply Chain", color: "#fb923c", icon: "●", metrics: [{col: "Orders Placed", type: "sum"}, {col: "Pending Orders", type: "sum"}] },
+  { key: "HR",           label: "HR",           color: "#f87171", icon: "■", metrics: [{col: "Interviews Scheduled", type: "sum"}, {col: "Total strength", type: "sum"}] },
+  { key: "CSAT",         label: "CSAT",         color: "#facc15", icon: "▶", metrics: [{col: "Onboarding", type: "sum"}, {col: "Tickets resolved", type: "sum"}] },
 ];
 
 const SKIP_COLS = new Set(['date','day','week','month','year','period','name','label','category','type','id','source','channel','region','department','team']);
@@ -629,7 +629,6 @@ const SKIP_COLS = new Set(['date','day','week','month','year','period','name','l
 let currentSheet = "main";
 let activeCharts = [];
 
-// Chart Defaults updated for Light Theme
 Chart.defaults.color = '#64748b';
 Chart.defaults.borderColor = 'rgba(0,0,0,0.05)';
 Chart.defaults.font.family = "'DM Mono', monospace";
@@ -717,9 +716,8 @@ async function loadMainDashboard() {
   // Hide raw data table on overview page
   document.getElementById('raw-data-section').style.display = 'none';
 
-  // ✅ 2 & 3. Build Number Slots for Overview
   buildOverviewSkeletons();
-  document.getElementById('kpis').innerHTML = ''; // Hide KPI bar on overview
+  document.getElementById('kpis').innerHTML = ''; // Hide single-line KPI bar on overview
 
   const allResults = [];
 
@@ -728,7 +726,7 @@ async function loadMainDashboard() {
       .then(data => {
         const r = { ...s, data };
         allResults.push(r);
-        fillOverviewCard(r); // Now populates numbers, not graphs!                                       
+        fillOverviewCard(r); // Extracts exactly the two requested metrics                                       
       })
       .catch(() => {
         markCardError(s.key);
@@ -738,13 +736,13 @@ async function loadMainDashboard() {
   await Promise.all(promises);
 }
 
-/* ── ✅ 3. Build Skeletons (Now renders number slots instead of chart canvas) ── */
+/* ── ✅ UPDATED SKELETON: Creates 2 spots per card ── */
 function buildOverviewSkeletons() {
   const area = document.getElementById('charts-area');
   area.innerHTML = '';
   const grid = document.createElement('div');
   grid.id = 'overview-grid';
-  grid.className = 'grid'; // Uses your existing beautiful card grid layout
+  grid.className = 'grid'; 
   area.appendChild(grid);
 
   OVERVIEW_SHEETS.forEach(s => {
@@ -753,60 +751,94 @@ function buildOverviewSkeletons() {
     card.className = 'card';
     card.id = `dept-card-${id}`;
     
-    // Create the slot UI
+    // UI for 2 metrics
     card.innerHTML = `
       <div class="card-label" style="color:${s.color}">${s.label}</div>
-      <div class="card-value" id="val-${id}">
-        <div class="spinner" style="width:16px;height:16px;border-width:2px;margin:0"></div>
+      
+      <div style="display:flex; justify-content:space-between; margin-top:16px;">
+        <div style="flex:1;">
+          <div class="card-change" style="margin-top:0; margin-bottom:4px;">${s.metrics[0].col} ${s.metrics[0].type === 'avg' ? '(AVG)' : ''}</div>
+          <div class="card-value" id="val1-${id}">
+            <div class="spinner" style="width:14px;height:14px;border-width:2px;margin:0"></div>
+          </div>
+        </div>
+        <div style="text-align:right; flex:1;">
+          <div class="card-change" style="margin-top:0; margin-bottom:4px;">${s.metrics[1].col} ${s.metrics[1].type === 'avg' ? '(AVG)' : ''}</div>
+          <div class="card-value" id="val2-${id}">
+            <div class="spinner" style="width:14px;height:14px;border-width:2px;margin:0"></div>
+          </div>
+        </div>
       </div>
-      <div class="card-change" id="metric-name-${id}">Loading...</div>
-      <div style="position:absolute;top:0;left:0;right:0;height:3px;background:${s.color}"></div>
+
+      <div style="position:absolute;top:0;left:0;right:0;height:4px;background:${s.color}"></div>
       <div class="card-bg">${s.icon}</div>
     `;
     grid.appendChild(card);
   });
 }
 
-/* ── ✅ 3. Fill Overview Cards (Just updates the numbers, no graphs!) ── */
+/* ── ✅ UPDATED DATA FILLER: Calculates Sum/Avg for the 2 specified columns ── */
 function fillOverviewCard(r) {
   const id = r.key.replace(/\s+/g,'-');
-  const valEl = document.getElementById(`val-${id}`);
-  const nameEl = document.getElementById(`metric-name-${id}`);
+  const val1El = document.getElementById(`val1-${id}`);
+  const val2El = document.getElementById(`val2-${id}`);
   
-  if (!valEl) return;
+  if (!val1El || !val2El) return;
 
   if (!r.data || !r.data.length) {
-    valEl.textContent = '—';
-    nameEl.textContent = 'No Data';
+    val1El.textContent = '—';
+    val2El.textContent = '—';
     return;
   }
 
-  // Find the primary metric for this department
-  const metricKey = Object.keys(r.data[0]).find(k => isMetricCol(k, r.data[0][k]));
-  if (!metricKey) { 
-    valEl.textContent = '—';
-    nameEl.textContent = 'No Metrics';
-    return; 
+  // Helper to safely find the column name even if spacing/casing is slightly off
+  const getHeaderName = (target) => {
+    const rowKeys = Object.keys(r.data[0]);
+    return rowKeys.find(k => k.toLowerCase().trim() === target.toLowerCase().trim());
+  };
+
+  // Metric 1
+  const m1Config = r.metrics[0];
+  const m1Header = getHeaderName(m1Config.col);
+  if (m1Header) {
+    let nums1 = r.data.map(d => parseFloat(d[m1Header])).filter(v => !isNaN(v));
+    if (nums1.length) {
+       let total = nums1.reduce((a,b) => a+b, 0);
+       let finalVal = m1Config.type === 'avg' ? (total / nums1.length) : total;
+       val1El.textContent = fmtNum(finalVal);
+    } else {
+       val1El.textContent = '0';
+    }
+  } else {
+    val1El.textContent = 'N/A';
   }
 
-  // Calculate sum of the metric
-  const nums = r.data.map(d => parseFloat(d[metricKey])).filter(v => !isNaN(v));
-  const sum = nums.reduce((a,b)=>a+b,0);
-
-  // Update UI with the number
-  valEl.textContent = fmtNum(sum);
-  nameEl.textContent = metricKey; // Shows which metric is being displayed below the number
+  // Metric 2
+  const m2Config = r.metrics[1];
+  const m2Header = getHeaderName(m2Config.col);
+  if (m2Header) {
+    let nums2 = r.data.map(d => parseFloat(d[m2Header])).filter(v => !isNaN(v));
+    if (nums2.length) {
+       let total = nums2.reduce((a,b) => a+b, 0);
+       let finalVal = m2Config.type === 'avg' ? (total / nums2.length) : total;
+       val2El.textContent = fmtNum(finalVal);
+    } else {
+       val2El.textContent = '0';
+    }
+  } else {
+    val2El.textContent = 'N/A';
+  }
 }
 
 function markCardError(key) {
   const id = key.replace(/\s+/g,'-');
-  const valEl = document.getElementById(`val-${id}`);
-  const nameEl = document.getElementById(`metric-name-${id}`);
-  if (valEl) { 
-    valEl.textContent = 'Error';
-    valEl.style.fontSize = '18px';
-    valEl.style.color = 'var(--danger)';
-    nameEl.textContent = 'Failed to load';
+  const val1El = document.getElementById(`val1-${id}`);
+  const val2El = document.getElementById(`val2-${id}`);
+  if (val1El) { 
+    val1El.textContent = 'Error';
+    val2El.textContent = 'Error';
+    val1El.style.color = 'var(--danger)';
+    val2El.style.color = 'var(--danger)';
   }
 }
 
@@ -814,16 +846,15 @@ function markCardError(key) {
 async function loadDepartment(sheet) {
   setLoading(true);
   
-  // Show raw data table and charts area when viewing a specific department
+  // Show raw data table and clear overview slots
   document.getElementById('raw-data-section').style.display = 'block';
-  document.getElementById('charts-area').innerHTML = ''; // Clear overview slots
+  document.getElementById('charts-area').innerHTML = ''; 
 
   try {
     const data = await fetchSheet(sheet);
     setLoading(false);
     if (!data.length) { showError(); return; }
     
-    // Render everything specifically for the department
     renderKPIs(data);
     renderDeptCharts(data, sheet);
     renderTable(data);
@@ -891,10 +922,9 @@ function renderDeptCharts(data, sheetName) {
 
   document.getElementById('dept-metric-tag').textContent = firstKey;
   
-  // Get the color for the current department
   const deptColor = OVERVIEW_SHEETS.find(d => d.key === sheetName)?.color || '#f97316';
 
-  // MAIN CHART (Keeping your Bar Chart logic!)
+  // MAIN CHART (Bar Chart)
   requestAnimationFrame(() => {
     const ctx = document.getElementById('dept-line').getContext('2d');
     const labels = data.map(d => d['Date'] || d['date'] || '');
@@ -909,7 +939,7 @@ function renderDeptCharts(data, sheetName) {
     grad.addColorStop(1, deptColor + '33');
 
     const c1 = new Chart(ctx, {
-      type: 'bar', // Kept your bar chart!
+      type: 'bar',
       data: { 
         labels, 
         datasets: [{ 
