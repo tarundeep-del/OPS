@@ -284,7 +284,8 @@
     /* ── KPI CARDS / SLOTS ── */
     .grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); 
+      /* Reduced minmax slightly so more cards fit on the screen nicely */
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); 
       gap: 16px;
       margin-bottom: 24px;
     }
@@ -317,14 +318,15 @@
     .card-value {
       font-family: 'DM Mono', monospace;
       font-weight: 500;
-      font-size: 22px; /* Adjusted size to fit two metrics perfectly */
+      font-size: 28px; 
       color: var(--text);
       line-height: 1;
+      margin-bottom: 8px;
     }
 
     .card-change {
       font-size: 10px;
-      color: var(--muted);
+      color: var(--success);
       text-transform: uppercase;
       letter-spacing: 0.05em;
     }
@@ -612,13 +614,13 @@
 <script>
 const API = "https://script.google.com/macros/s/AKfycbxqM_jClfPETd7I7eDXXiCGQvs3RRzgBpQNUjh8mrh_wymG6DNabMOnQarSZxpODiVn/exec";
 
-// ✅ OVERVIEW METRICS CONFIGURATION
-// Changed to support 2 exact metrics per card (Sum vs Avg)
+// ✅ OVERVIEW METRICS CONFIGURATION - 2 Separate Cards Per Department
 const OVERVIEW_SHEETS = [
   { key: "Sales",        label: "Sales",        color: "#f97316", icon: "◈", metrics: [{col: "Leads", type: "sum"}, {col: "Enrollments", type: "sum"}] },
   { key: "Marketing",    label: "Marketing",    color: "#60a5fa", icon: "◉", metrics: [{col: "ROAS", type: "avg"}, {col: "Cost", type: "sum"}] },
   { key: "Product",      label: "Product",      color: "#a78bfa", icon: "▲", metrics: [{col: "Live session", type: "sum"}, {col: "NPS", type: "avg"}] },
   { key: "Finance",      label: "Finance",      color: "#34d399", icon: "◆", metrics: [{col: "Total collection of month", type: "sum"}, {col: "Total collection of Day", type: "sum"}] },
+  { key: "Accounts",     label: "Accounts",     color: "#ec4899", icon: "◇", metrics: [{col: "Receivables", type: "sum"}, {col: "Payables", type: "sum"}] }, // Adjust these columns based on your sheet
   { key: "Supply Chain", label: "Supply Chain", color: "#fb923c", icon: "●", metrics: [{col: "Orders Placed", type: "sum"}, {col: "Pending Orders", type: "sum"}] },
   { key: "HR",           label: "HR",           color: "#f87171", icon: "■", metrics: [{col: "Interviews Scheduled", type: "sum"}, {col: "Total strength", type: "sum"}] },
   { key: "CSAT",         label: "CSAT",         color: "#facc15", icon: "▶", metrics: [{col: "Onboarding", type: "sum"}, {col: "Tickets resolved", type: "sum"}] },
@@ -716,8 +718,9 @@ async function loadMainDashboard() {
   // Hide raw data table on overview page
   document.getElementById('raw-data-section').style.display = 'none';
 
+  // Build Individual Cards for each Metric (16 Total)
   buildOverviewSkeletons();
-  document.getElementById('kpis').innerHTML = ''; // Hide single-line KPI bar on overview
+  document.getElementById('kpis').innerHTML = ''; // Hide KPI bar on overview
 
   const allResults = [];
 
@@ -726,7 +729,7 @@ async function loadMainDashboard() {
       .then(data => {
         const r = { ...s, data };
         allResults.push(r);
-        fillOverviewCard(r); // Extracts exactly the two requested metrics                                       
+        fillOverviewCards(r);                                       
       })
       .catch(() => {
         markCardError(s.key);
@@ -736,7 +739,7 @@ async function loadMainDashboard() {
   await Promise.all(promises);
 }
 
-/* ── ✅ UPDATED SKELETON: Creates 2 spots per card ── */
+/* ── ✅ UPDATED SKELETON: Creates 2 distinct cards per department ── */
 function buildOverviewSkeletons() {
   const area = document.getElementById('charts-area');
   area.innerHTML = '';
@@ -747,98 +750,75 @@ function buildOverviewSkeletons() {
 
   OVERVIEW_SHEETS.forEach(s => {
     const id = s.key.replace(/\s+/g,'-');
-    const card = document.createElement('div');
-    card.className = 'card';
-    card.id = `dept-card-${id}`;
     
-    // UI for 2 metrics
-    card.innerHTML = `
-      <div class="card-label" style="color:${s.color}">${s.label}</div>
+    // Loop through the 2 metrics and create a separate card for each
+    s.metrics.forEach((m, index) => {
+      const card = document.createElement('div');
+      card.className = 'card';
+      card.id = `dept-card-${id}-${index}`;
       
-      <div style="display:flex; justify-content:space-between; margin-top:16px;">
-        <div style="flex:1;">
-          <div class="card-change" style="margin-top:0; margin-bottom:4px;">${s.metrics[0].col} ${s.metrics[0].type === 'avg' ? '(AVG)' : ''}</div>
-          <div class="card-value" id="val1-${id}">
-            <div class="spinner" style="width:14px;height:14px;border-width:2px;margin:0"></div>
-          </div>
+      card.innerHTML = `
+        <div class="card-label" style="color:${s.color}">${s.label}</div>
+        <div style="font-size: 10px; color: var(--muted); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600;">
+          ${m.col} ${m.type === 'avg' ? '(Avg)' : '(Total)'}
         </div>
-        <div style="text-align:right; flex:1;">
-          <div class="card-change" style="margin-top:0; margin-bottom:4px;">${s.metrics[1].col} ${s.metrics[1].type === 'avg' ? '(AVG)' : ''}</div>
-          <div class="card-value" id="val2-${id}">
-            <div class="spinner" style="width:14px;height:14px;border-width:2px;margin:0"></div>
-          </div>
+        <div class="card-value" id="val-${id}-${index}">
+          <div class="spinner" style="width:20px;height:20px;border-width:2px;margin:0"></div>
         </div>
-      </div>
-
-      <div style="position:absolute;top:0;left:0;right:0;height:4px;background:${s.color}"></div>
-      <div class="card-bg">${s.icon}</div>
-    `;
-    grid.appendChild(card);
+        <div class="card-change">↑ active</div>
+        <div style="position:absolute;top:0;left:0;right:0;height:4px;background:${s.color}"></div>
+        <div class="card-bg">${s.icon}</div>
+      `;
+      grid.appendChild(card);
+    });
   });
 }
 
-/* ── ✅ UPDATED DATA FILLER: Calculates Sum/Avg for the 2 specified columns ── */
-function fillOverviewCard(r) {
+/* ── ✅ UPDATED DATA FILLER: Fills the individual metric cards ── */
+function fillOverviewCards(r) {
   const id = r.key.replace(/\s+/g,'-');
-  const val1El = document.getElementById(`val1-${id}`);
-  const val2El = document.getElementById(`val2-${id}`);
   
-  if (!val1El || !val2El) return;
-
-  if (!r.data || !r.data.length) {
-    val1El.textContent = '—';
-    val2El.textContent = '—';
-    return;
-  }
-
-  // Helper to safely find the column name even if spacing/casing is slightly off
   const getHeaderName = (target) => {
+    if (!r.data || !r.data.length) return null;
     const rowKeys = Object.keys(r.data[0]);
     return rowKeys.find(k => k.toLowerCase().trim() === target.toLowerCase().trim());
   };
 
-  // Metric 1
-  const m1Config = r.metrics[0];
-  const m1Header = getHeaderName(m1Config.col);
-  if (m1Header) {
-    let nums1 = r.data.map(d => parseFloat(d[m1Header])).filter(v => !isNaN(v));
-    if (nums1.length) {
-       let total = nums1.reduce((a,b) => a+b, 0);
-       let finalVal = m1Config.type === 'avg' ? (total / nums1.length) : total;
-       val1El.textContent = fmtNum(finalVal);
-    } else {
-       val1El.textContent = '0';
-    }
-  } else {
-    val1El.textContent = 'N/A';
-  }
+  r.metrics.forEach((mConfig, index) => {
+    const valEl = document.getElementById(`val-${id}-${index}`);
+    if (!valEl) return;
 
-  // Metric 2
-  const m2Config = r.metrics[1];
-  const m2Header = getHeaderName(m2Config.col);
-  if (m2Header) {
-    let nums2 = r.data.map(d => parseFloat(d[m2Header])).filter(v => !isNaN(v));
-    if (nums2.length) {
-       let total = nums2.reduce((a,b) => a+b, 0);
-       let finalVal = m2Config.type === 'avg' ? (total / nums2.length) : total;
-       val2El.textContent = fmtNum(finalVal);
-    } else {
-       val2El.textContent = '0';
+    if (!r.data || !r.data.length) {
+      valEl.textContent = '—';
+      return;
     }
-  } else {
-    val2El.textContent = 'N/A';
-  }
+
+    const mHeader = getHeaderName(mConfig.col);
+    if (mHeader) {
+      let nums = r.data.map(d => parseFloat(d[mHeader])).filter(v => !isNaN(v));
+      if (nums.length) {
+         let total = nums.reduce((a,b) => a+b, 0);
+         let finalVal = mConfig.type === 'avg' ? (total / nums.length) : total;
+         valEl.textContent = fmtNum(finalVal);
+      } else {
+         valEl.textContent = '0';
+      }
+    } else {
+      valEl.textContent = 'N/A'; // If the column name isn't found in the sheet
+    }
+  });
 }
 
 function markCardError(key) {
   const id = key.replace(/\s+/g,'-');
-  const val1El = document.getElementById(`val1-${id}`);
-  const val2El = document.getElementById(`val2-${id}`);
-  if (val1El) { 
-    val1El.textContent = 'Error';
-    val2El.textContent = 'Error';
-    val1El.style.color = 'var(--danger)';
-    val2El.style.color = 'var(--danger)';
+  // Attempt to mark both cards as error if the sheet fetch fails
+  for(let index = 0; index < 2; index++) {
+    const valEl = document.getElementById(`val-${id}-${index}`);
+    if (valEl) { 
+      valEl.textContent = 'Error';
+      valEl.style.fontSize = '18px';
+      valEl.style.color = 'var(--danger)';
+    }
   }
 }
 
@@ -894,7 +874,7 @@ function renderKPIs(data) {
   if (!idx) container.innerHTML = `<div class="state-msg">No numeric metrics found</div>`;
 }
 
-/* ── Dept charts: line/bar + doughnut (Visible only on Department views) ── */
+/* ── Dept charts: Bar + Doughnut (Visible only on Department views) ── */
 function renderDeptCharts(data, sheetName) {
   const area = document.getElementById('charts-area');
   area.innerHTML = `
