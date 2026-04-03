@@ -584,6 +584,9 @@
     <div class="menu-item" onclick="loadPage('Finance')" data-page="Finance">
       <span class="menu-dot"></span> Finance
     </div>
+    <div class="menu-item" onclick="loadPage('Accounts')" data-page="Accounts">
+      <span class="menu-dot"></span> Accounts
+    </div>
     <div class="menu-item" onclick="loadPage('Supply Chain')" data-page="Supply Chain">
       <span class="menu-dot"></span> Supply Chain
     </div>
@@ -649,6 +652,7 @@ const API = "https://script.google.com/macros/s/AKfycbxqM_jClfPETd7I7eDXXiCGQvs3
 const OVERVIEW_SHEETS = [
   { key: "Sales",        label: "Sales",        color: "#f97316" },
   { key: "Marketing",    label: "Marketing",    color: "#60a5fa" },
+  { key: "Accounts",     label: "Accounts",     color: "#ec4899" },
   { key: "Finance",      label: "Finance",      color: "#34d399" },
   { key: "Product",      label: "Product",      color: "#a78bfa" },
   { key: "Supply Chain", label: "Supply Chain", color: "#fb923c" },
@@ -724,6 +728,7 @@ async function loadPage(sheet) {
     'Sales':        ['Sales',         'Daily performance metrics'],
     'Marketing':    ['Marketing',     'Campaign & acquisition data'],
     'Product':      ['Product',       'Feature & engagement metrics'],
+    'Accounts':     ['Accounts',      'Payables, receivables & cash flow'],
     'Finance':      ['Finance',       'Revenue, costs & margins'],
     'Supply Chain': ['Supply Chain',  'Inventory & logistics data'],
     'HR':           ['HR',            'Headcount & people metrics'],
