@@ -281,11 +281,34 @@
 
     .btn:active { transform: translateY(0); }
 
-    /* ── KPI CARDS / SLOTS ── */
+    /* ── DEPARTMENT SECTIONS (NEW OVERVIEW LAYOUT) ── */
+    .dept-section {
+      margin-bottom: 32px;
+    }
+
+    .dept-heading {
+      font-family: 'Syne', sans-serif;
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 16px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .dept-cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); 
+      gap: 16px;
+    }
+
+    /* ── KPI CARDS ── */
     .grid {
       display: grid;
-      /* Reduced minmax slightly so more cards fit on the screen nicely */
-      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); 
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); 
       gap: 16px;
       margin-bottom: 24px;
     }
@@ -620,7 +643,7 @@ const OVERVIEW_SHEETS = [
   { key: "Marketing",    label: "Marketing",    color: "#60a5fa", icon: "◉", metrics: [{col: "ROAS", type: "avg"}, {col: "Cost", type: "sum"}] },
   { key: "Product",      label: "Product",      color: "#a78bfa", icon: "▲", metrics: [{col: "Live session", type: "sum"}, {col: "NPS", type: "avg"}] },
   { key: "Finance",      label: "Finance",      color: "#34d399", icon: "◆", metrics: [{col: "Total collection of month", type: "sum"}, {col: "Total collection of Day", type: "sum"}] },
-  { key: "Accounts",     label: "Accounts",     color: "#ec4899", icon: "◇", metrics: [{col: "Receivables", type: "sum"}, {col: "Payables", type: "sum"}] }, // Adjust these columns based on your sheet
+  { key: "Accounts",     label: "Accounts",     color: "#ec4899", icon: "◇", metrics: [{col: "Receivables", type: "sum"}, {col: "Payables", type: "sum"}] }, 
   { key: "Supply Chain", label: "Supply Chain", color: "#fb923c", icon: "●", metrics: [{col: "Orders Placed", type: "sum"}, {col: "Pending Orders", type: "sum"}] },
   { key: "HR",           label: "HR",           color: "#f87171", icon: "■", metrics: [{col: "Interviews Scheduled", type: "sum"}, {col: "Total strength", type: "sum"}] },
   { key: "CSAT",         label: "CSAT",         color: "#facc15", icon: "▶", metrics: [{col: "Onboarding", type: "sum"}, {col: "Tickets resolved", type: "sum"}] },
@@ -718,9 +741,9 @@ async function loadMainDashboard() {
   // Hide raw data table on overview page
   document.getElementById('raw-data-section').style.display = 'none';
 
-  // Build Individual Cards for each Metric (16 Total)
+  // Build Department Groups and Cards
   buildOverviewSkeletons();
-  document.getElementById('kpis').innerHTML = ''; // Hide KPI bar on overview
+  document.getElementById('kpis').innerHTML = ''; // Hide generic KPI bar on overview
 
   const allResults = [];
 
@@ -739,19 +762,30 @@ async function loadMainDashboard() {
   await Promise.all(promises);
 }
 
-/* ── ✅ UPDATED SKELETON: Creates 2 distinct cards per department ── */
+/* ── ✅ SKELETON: Creates Heading & 2 Cards per Department ── */
 function buildOverviewSkeletons() {
   const area = document.getElementById('charts-area');
   area.innerHTML = '';
-  const grid = document.createElement('div');
-  grid.id = 'overview-grid';
-  grid.className = 'grid'; 
-  area.appendChild(grid);
 
   OVERVIEW_SHEETS.forEach(s => {
     const id = s.key.replace(/\s+/g,'-');
     
-    // Loop through the 2 metrics and create a separate card for each
+    // Create Department Section container
+    const section = document.createElement('div');
+    section.className = 'dept-section';
+
+    // Create Department Heading
+    const heading = document.createElement('div');
+    heading.className = 'dept-heading';
+    heading.style.color = s.color;
+    heading.innerHTML = `<span>${s.icon}</span> ${s.label}`;
+    section.appendChild(heading);
+
+    // Create Grid for the 2 cards
+    const grid = document.createElement('div');
+    grid.className = 'dept-cards-grid';
+
+    // Loop through the 2 metrics and create a card for each
     s.metrics.forEach((m, index) => {
       const card = document.createElement('div');
       card.className = 'card';
@@ -771,10 +805,13 @@ function buildOverviewSkeletons() {
       `;
       grid.appendChild(card);
     });
+
+    section.appendChild(grid);
+    area.appendChild(section);
   });
 }
 
-/* ── ✅ UPDATED DATA FILLER: Fills the individual metric cards ── */
+/* ── ✅ DATA FILLER: Fills the metric cards inside the department sections ── */
 function fillOverviewCards(r) {
   const id = r.key.replace(/\s+/g,'-');
   
@@ -804,14 +841,13 @@ function fillOverviewCards(r) {
          valEl.textContent = '0';
       }
     } else {
-      valEl.textContent = 'N/A'; // If the column name isn't found in the sheet
+      valEl.textContent = 'N/A'; 
     }
   });
 }
 
 function markCardError(key) {
   const id = key.replace(/\s+/g,'-');
-  // Attempt to mark both cards as error if the sheet fetch fails
   for(let index = 0; index < 2; index++) {
     const valEl = document.getElementById(`val-${id}-${index}`);
     if (valEl) { 
@@ -826,7 +862,7 @@ function markCardError(key) {
 async function loadDepartment(sheet) {
   setLoading(true);
   
-  // Show raw data table and clear overview slots
+  // Show raw data table and clear overview layout
   document.getElementById('raw-data-section').style.display = 'block';
   document.getElementById('charts-area').innerHTML = ''; 
 
