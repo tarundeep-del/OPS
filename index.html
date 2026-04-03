@@ -837,23 +837,22 @@ function fillOverviewCard(r) {
   
   const lbls = r.data.map(d => d['Date'] || d['date'] || '');
 
+  // Updated gradient for bars
   const grad = ctx.createLinearGradient(0, 0, 0, 130);
-  grad.addColorStop(0, r.color + '55');
-  grad.addColorStop(1, r.color + '00');
+  grad.addColorStop(0, r.color + 'dd'); // Slightly more solid top
+  grad.addColorStop(1, r.color + '33'); // Transparent bottom
 
   const c = new Chart(ctx, {
-    type: 'line',
+    type: 'bar', // Changed to Bar Graph
     data: {
       labels: lbls,
       datasets: [{ 
         data: vals, 
-        borderColor: r.color, 
         backgroundColor: grad,
-        borderWidth: 1.5, 
-        pointRadius: 2, 
-        spanGaps: true, 
-        tension: 0.4, 
-        fill: true 
+        borderColor: r.color, 
+        borderWidth: 1,
+        borderRadius: 4, // Adds rounded tops to the bars
+        borderSkipped: false
       }]
     },
     options: {
@@ -864,7 +863,11 @@ function fillOverviewCard(r) {
       }},
       scales: {
         x: { display: false },
-        y: { ticks: { color:'#64748b', font:{size:9}, maxTicksLimit:4 }, grid: { color:'rgba(255,255,255,0.03)' } }
+        y: { 
+          beginAtZero: true, // Forces bars to start from the baseline
+          ticks: { color:'#64748b', font:{size:9}, maxTicksLimit:4 }, 
+          grid: { color:'rgba(255,255,255,0.03)' } 
+        }
       }
     }
   });
